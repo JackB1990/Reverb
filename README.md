@@ -36,6 +36,7 @@ Set these under `environment:` in the compose file.
 | `TRUST_PROXY` | `false` | Set to `true` behind a reverse proxy so rate limiting sees real IPs |
 | `SETLISTFM_API_KEY` | (empty) | Setlist.fm key for the "fill setlist" button (or paste it in Settings) |
 | `BANDSINTOWN_APP_ID` | (empty) | Bandsintown app ID for "Find new tour dates" (or paste it in Settings) |
+| `NAVIDROME_URL`, `NAVIDROME_USER`, `NAVIDROME_PASSWORD` | (empty) | Your Navidrome server. Enables **Settings → Sync Navidrome** (play links) and **Backfill artwork** |
 | `TZ` | (UTC) | Container time zone, e.g. `Europe/London` |
 
 ## Accounts

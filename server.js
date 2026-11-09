@@ -9,6 +9,7 @@
  *   ALLOW_SIGNUP   "false" to stop new accounts being made  (default true)
  *   SETLISTFM_API_KEY    optional: Setlist.fm key for setlist lookups
  *   BANDSINTOWN_APP_ID   optional: Bandsintown app id for tour-date lookups
+ *   NAVIDROME_URL / NAVIDROME_USER / NAVIDROME_PASSWORD   optional: Navidrome sync and artwork
  *   COOKIE_SECURE  "true" when served over HTTPS            (default false)
  *   TRUST_PROXY    "true" to read client IP from X-Forwarded-For (default false)
  *
@@ -30,6 +31,19 @@ const scrypt = promisify(crypto.scrypt);
 const PORT = parseInt(process.env.PORT || '8080', 10);
 const SETLISTFM_KEY = process.env.SETLISTFM_API_KEY || '';
 const BANDSINTOWN_ID = process.env.BANDSINTOWN_APP_ID || '';
+const ND_URL = (process.env.NAVIDROME_URL || '').replace(/\/+$/, '');
+const ND_USER = process.env.NAVIDROME_USER || '';
+const ND_PASS = process.env.NAVIDROME_PASSWORD || '';
+const ND_ON = !!(ND_URL && ND_USER && ND_PASS);
+
+// Subsonic API call to Navidrome (token auth, so the password is never sent in the clear).
+function ndUrl(endpoint, params) {
+  const salt = crypto.randomBytes(6).toString('hex');
+  const u = new URL(ND_URL + '/rest/' + endpoint + '.view');
+  const all = { u: ND_USER, t: crypto.createHash('md5').update(ND_PASS + salt).digest('hex'), s: salt, v: '1.16.1', c: 'reverb', f: 'json', ...params };
+  for (const [k, v] of Object.entries(all)) u.searchParams.set(k, v);
+  return u;
+}
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const ALLOW_SIGNUP = (process.env.ALLOW_SIGNUP || 'true').toLowerCase() !== 'false';
@@ -303,6 +317,41 @@ async function handleApi(req, res, url) {
     }
     q.putData.run(s.user.id, JSON.stringify(body));
     return sendJson(res, 200, { ok: true });
+  }
+
+  if (route === '/api/navidrome/status' && method === 'GET') {
+    if (!sessionFromReq(req)) return sendJson(res, 401, { error: 'Not signed in.' });
+    return sendJson(res, 200, { configured: ND_ON, url: ND_ON ? ND_URL : '' });
+  }
+
+  if (route === '/api/navidrome/library' && method === 'GET') {
+    if (!sessionFromReq(req)) return sendJson(res, 401, { error: 'Not signed in.' });
+    if (!ND_ON) return sendJson(res, 400, { error: 'Navidrome is not configured (set NAVIDROME_URL, NAVIDROME_USER and NAVIDROME_PASSWORD).' });
+    const offset = Math.max(0, parseInt(url.searchParams.get('offset') || '0', 10) || 0);
+    let r;
+    try { r = await fetch(ndUrl('search3', { query: '""', artistCount: 0, albumCount: 0, songCount: 500, songOffset: offset }), { signal: AbortSignal.timeout(60000) }); }
+    catch (e) { return sendJson(res, 502, { error: 'Could not reach Navidrome at ' + ND_URL + '.' }); }
+    if (!r.ok) return sendJson(res, 502, { error: 'Navidrome said ' + r.status + '.' });
+    const j = await r.json().catch(() => ({}));
+    const sr = j['subsonic-response'] || {};
+    if (sr.status !== 'ok') return sendJson(res, 502, { error: 'Navidrome: ' + ((sr.error && sr.error.message) || 'request failed') });
+    const songs = ((sr.searchResult3 || {}).song || []).map((x) => [x.id, x.title || '', x.artist || '', x.albumId || '', x.album || '', x.coverArt || '', x.track || 0, x.discNumber || 0]);
+    return sendJson(res, 200, { songs });
+  }
+
+  if (route === '/api/navidrome/art' && method === 'GET') {
+    if (!sessionFromReq(req)) { res.writeHead(401); return res.end(); }
+    const id = url.searchParams.get('id') || '';
+    if (!ND_ON || !id) { res.writeHead(404); return res.end(); }
+    const size = Math.min(1000, parseInt(url.searchParams.get('size') || '300', 10) || 300);
+    try {
+      const r = await fetch(ndUrl('getCoverArt', { id, size }), { signal: AbortSignal.timeout(20000) });
+      const type = r.headers.get('content-type') || '';
+      if (!r.ok || !type.startsWith('image/')) { res.writeHead(404); return res.end(); }
+      const buf = Buffer.from(await r.arrayBuffer());
+      res.writeHead(200, { 'Content-Type': type, 'Content-Length': buf.length, 'Cache-Control': 'private, max-age=604800' });
+      return res.end(buf);
+    } catch (e) { res.writeHead(502); return res.end(); }
   }
 
   if (route === '/api/lookup/setlist' && method === 'GET') {

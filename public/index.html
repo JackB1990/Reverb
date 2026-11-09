@@ -361,7 +361,7 @@ async function push(){if(saveBusy){saveAgain=true;return}saveBusy=true;
  catch(e){toast('Could not save to the server — check the connection. Changes are kept on this page until it works.');saveAgain=true;setTimeout(()=>{if(saveAgain){saveAgain=false;push()}},8000)}
  saveBusy=false;if(saveAgain&&!saveT){saveAgain=false;push()}}
 window.addEventListener('beforeunload',e=>{if(saveT||saveBusy){e.preventDefault();e.returnValue=''}});
-const ui={agq:'',artq:'',artSort:'name',themeF:[],ndOnly:false,songLimit:15,sf:null,open:{},q:'',pick:{press:true,archive:true,radio:true},showId:null,songq:'',songg:'',pstat:'all',cal:{y:+TODAY.slice(0,4),m:+TODAY.slice(5,7)-1},calSt:'',calPast:false,calOpen:{},scan:null};
+const ui={agq:'',artq:'',artSort:'name',themeF:[],ndOnly:false,songLimit:15,sf:null,open:{},q:'',pick:{press:true,archive:true,radio:true},showId:null,songq:'',songg:'',pstat:'all',cal:{y:+TODAY.slice(0,4),m:+TODAY.slice(5,7)-1},calSt:'',calPast:false,calOpen:{},scan:null,nd:{busy:0,msg:''}};
 let modal=null;
 
 /* ===================== lookups ===================== */
@@ -399,21 +399,27 @@ function tabs(group,list){return `<div class="tabs">${list.map(([v,l])=>`<button
 function cta(m){return `<div class="card cta"><div style="display:flex;justify-content:center;margin-bottom:10px">${logo(m,22,true)}</div><p class="muted small">${BR[m].desc}</p><button class="btn pri" data-act="enable" data-m="${m}">Add ${BR[m].label}</button></div>`}
 
 function dashboard(){
- const upG=S.gigs.filter(g=>g.date>=TODAY).sort(byDate).slice(0,4);
- const due=S.apps.filter(p=>['Draft','Requested'].includes(p.status)&&p.followUp&&p.followUp<=addDays(TODAY,7)).sort((a,b)=>a.followUp.localeCompare(b.followUp));
- const nx=S.shows.filter(s=>s.date>=TODAY).sort(byDate)[0];
- const attended=S.gigs.filter(g=>g.date<TODAY&&g.date.startsWith('2026'));
- let out=`<div class="grid g3" style="margin-bottom:16px">`;
- out+=`<div class="card"><div class="muted small">Artists tracked</div><div class="stat">${S.artists.length}</div></div>`;
- if(on('archive'))out+=`<div class="card"><div class="muted small">Gigs & festivals attended in 2026</div><div class="stat" style="color:var(--red)">${attended.length}</div></div>`;
- if(on('press'))out+=`<div class="card"><div class="muted small">Open press requests</div><div class="stat" style="color:var(--blue)">${S.apps.filter(p=>['Draft','Requested'].includes(p.status)).length}</div></div>`;
- if(on('radio'))out+=`<div class="card"><div class="muted small">Songs in database</div><div class="stat" style="color:var(--green)">${S.songs.length}</div></div>`;
- out+=`</div><div class="grid g2">`;
- if(on('archive')){out+=`<div class="card"><h3>Upcoming gigs & festivals <span class="btn sm" data-act="nav" data-v="archive">Open</span></h3>${upG.map(g=>`<div class="item"><div class="date"><b>${dayNum(g.date)}</b><span>${mon(g.date)}</span></div><div><div class="link" data-act="openGig" data-id="${g.id}">${h(g.title)}</div><div class="muted small">${h(g.venue)}, ${h(g.city)}</div></div></div>`).join('')||'<p class="muted">Nothing booked.</p>'}</div>`}else out+=cta('archive');
- if(on('press')){out+=`<div class="card"><h3>Follow-ups due this week <span class="btn sm" data-act="nav" data-v="press">Open</span></h3>${due.map(p=>`<div class="item"><span class="pill ${p.followUp<=TODAY?'bad':'warn'}">${p.followUp<=TODAY?'Overdue':fd(p.followUp)}</span><div><div><b>${p.type}</b> · ${h(p.artistId?aname(p.artistId):gigLabel(gig(p.gigId)))}</div><div class="muted small">${p.contactId?h(contact(p.contactId).name)+' · '+h(contact(p.contactId).agency):'No contact set'}</div></div></div>`).join('')||'<p class="muted">All caught up.</p>'}</div>`}else out+=cta('press');
- if(on('radio')){const secs=nx?showSecs(nx):0;const pct=nx?Math.min(100,Math.round(secs/(nx.mins*60)*100)):0;out+=`<div class="card"><h3>Next show <span class="btn sm" data-act="nav" data-v="radio">Open</span></h3>${nx?`<div><b>${h(nx.name)}</b> · ${fd(nx.date)} at ${nx.start}</div><div class="muted small" style="margin:6px 0">${mmss(secs)} of ${nx.mins}:00 planned (${pct}%)</div><div class="bar-bg"><div class="bar-fg" style="width:${pct}%;background:var(--green)"></div></div><button class="btn sm" style="margin-top:10px" data-act="editShow" data-id="${nx.id}">Build playlist</button>`:'<p class="muted">No upcoming shows.</p>'}</div>`}else out+=cta('radio');
- if(on('archive')&&on('press')){const un=S.gigs.filter(g=>g.date>=TODAY&&g.kind==='Gig'&&!S.apps.some(p=>p.gigId===g.id));out+=`<div class="card"><h3>Gigs without a press request</h3>${un.map(g=>`<div class="item between"><div><b>${h(g.title)}</b><div class="muted small">${fd(g.date)} · ${h(g.venue)}</div></div><button class="btn sm" data-act="requestPress" data-id="${g.id}">Request access</button></div>`).join('')||'<p class="muted">Every upcoming gig has a request.</p>'}</div>`}
- return out+'</div>';
+  const yr=TODAY.slice(0,4);
+  const upG=S.gigs.filter(g=>g.date>=TODAY).sort(byDate);
+  const att=S.gigs.filter(g=>g.date<TODAY&&g.date.startsWith(yr));
+  const upT=S.tours.filter(t=>t.date>=TODAY).sort(byDate);
+  const open=S.apps.filter(p=>['Draft','Requested'].includes(p.status));
+  const due=S.apps.filter(p=>['Draft','Requested'].includes(p.status)&&p.followUp&&p.followUp<=addDays(TODAY,7)).sort((a,b)=>a.followUp.localeCompare(b.followUp));
+  const nx=S.shows.filter(s=>s.date>=TODAY).sort(byDate)[0];
+  const vs=visSongs();
+  const tile=(label,val,color,act,v)=>`<div class="card" ${act?`data-act="${act}" data-v="${v}" style="cursor:pointer"`:''}><div class="muted small">${label}</div><div class="stat" ${color?`style="color:${color}"`:''}>${val}</div></div>`;
+  let out=`<div class="grid g3" style="margin-bottom:16px">`;
+  out+=tile('Artists tracked',S.artists.length,'','nav','artists');
+  if(on('press')){out+=tile('Upcoming tour dates',upT.length,'var(--blue)','nav','press');out+=tile('Open press requests',open.length,'var(--blue)','nav','press');out+=tile('PR agencies',S.agencies.length,'var(--blue)','nav','press')}
+  if(on('archive')){out+=tile('Attended in '+yr,att.length,'var(--red)','nav','archive');out+=tile('Upcoming gigs & festivals',upG.length,'var(--red)','nav','archive')}
+  if(on('radio')){out+=tile('Songs in database',vs.length.toLocaleString('en-GB'),'var(--green)','nav','radio');out+=tile('Favourites',vs.filter(s=>s.fav).length,'var(--green)','nav','radio');out+=tile('Shows planned',S.shows.length,'var(--green)','nav','radio')}
+  out+=`</div><div class="grid g2">`;
+  if(on('press')){out+=`<div class="card"><h3>Upcoming tour dates <span class="btn sm" data-act="subnav" data-m="press" data-t="calendar">Calendar</span></h3>${upT.slice(0,6).map(t=>`<div class="item between"><div class="row" style="gap:12px"><div class="date"><b>${dayNum(t.date)}</b><span>${mon(t.date)}</span></div><div><div class="link" data-act="openArtist" data-id="${t.artistId}">${h(aname(t.artistId))}</div><div class="muted small">${h(t.venue||'Venue TBA')}${t.city?', '+h(t.city):''}</div></div></div>${pressPill(tourReq(t))}</div>`).join('')||'<p class="muted">No upcoming tour dates yet — add some or use Find new tour dates.</p>'}</div>`}else out+=cta('press');
+  if(on('archive')){out+=`<div class="card"><h3>Upcoming gigs & festivals <span class="btn sm" data-act="nav" data-v="archive">Open</span></h3>${upG.slice(0,5).map(g=>`<div class="item"><div class="date"><b>${dayNum(g.date)}</b><span>${mon(g.date)}</span></div><div><div class="link" data-act="openGig" data-id="${g.id}">${h(g.title)}</div><div class="muted small">${h(g.venue)}, ${h(g.city)}</div></div></div>`).join('')||'<p class="muted">Nothing booked.</p>'}</div>`}else out+=cta('archive');
+  if(on('press')){out+=`<div class="card"><h3>Follow-ups due this week <span class="btn sm" data-act="nav" data-v="press">Open</span></h3>${due.map(p=>`<div class="item"><span class="pill ${p.followUp<=TODAY?'bad':'warn'}">${p.followUp<=TODAY?'Overdue':fd(p.followUp)}</span><div><div><b>${p.type}</b> · ${h(p.artistId?aname(p.artistId):gigLabel(gig(p.gigId)))}</div><div class="muted small">${p.contactId?h(contact(p.contactId).name)+' · '+h(contact(p.contactId).agency):'No contact set'}</div></div></div>`).join('')||'<p class="muted">All caught up.</p>'}</div>`}
+  if(on('radio')){const secs=nx?showSecs(nx):0;const pct=nx?Math.min(100,Math.round(secs/(nx.mins*60)*100)):0;out+=`<div class="card"><h3>Next show <span class="btn sm" data-act="nav" data-v="radio">Open</span></h3>${nx?`<div><b>${h(nx.name)}</b> · ${fd(nx.date)} at ${nx.start}</div><div class="muted small" style="margin:6px 0">${mmss(secs)} of ${nx.mins}:00 planned (${pct}%)</div><div class="bar-bg"><div class="bar-fg" style="width:${pct}%;background:var(--green)"></div></div><button class="btn sm" style="margin-top:10px" data-act="editShow" data-id="${nx.id}">Build playlist</button>`:'<p class="muted">No upcoming shows.</p>'}</div>`}else out+=cta('radio');
+  if(on('archive')&&on('press')){const un=S.gigs.filter(g=>g.date>=TODAY&&g.kind==='Gig'&&!S.apps.some(p=>p.gigId===g.id));out+=`<div class="card"><h3>Gigs without a press request</h3>${un.map(g=>`<div class="item between"><div><b>${h(g.title)}</b><div class="muted small">${fd(g.date)} · ${h(g.venue)}</div></div><button class="btn sm" data-act="requestPress" data-id="${g.id}">Request access</button></div>`).join('')||'<p class="muted">Every upcoming gig has a request.</p>'}</div>`}
+  return out+'</div>';
 }
 
 function artistsView(){
@@ -515,7 +521,7 @@ function artBg(s){
 }
 function songList(){
  const q=ui.songq.toLowerCase().trim();
- return S.songs.filter(s=>(!q||(s.title+' '+aname(s.artistId)+' '+(s.album||'')+' '+(s.genre||'')).toLowerCase().includes(q))&&ui.themeF.every(t=>(s.themes||[]).includes(t))&&(!ui.ndOnly||s.nd))
+ return S.songs.filter(s=>!s.ndOnly&&(!q||(s.title+' '+aname(s.artistId)+' '+(s.album||'')+' '+(s.genre||'')).toLowerCase().includes(q))&&ui.themeF.every(t=>(s.themes||[]).includes(t))&&(!ui.ndOnly||s.nd))
   .sort((a,b)=>aname(a.artistId).localeCompare(aname(b.artistId))||a.title.localeCompare(b.title));
 }
 function songRow(s,sh){
@@ -572,7 +578,8 @@ IC.tick=s=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
 IC.warn=s=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" style="width:${s}px;height:${s}px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
 const initials=n=>String(n).split(/\s+/).filter(w=>/^[A-Za-z0-9]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join('')||'?';
 const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
-const nTracks=a=>S.songs.filter(s=>s.artistId===a.id).length;
+const visSongs=()=>S.songs.filter(s=>!s.ndOnly);
+const nTracks=a=>S.songs.filter(s=>s.artistId===a.id&&!s.ndOnly).length;
 const upDates=a=>S.tours.filter(t=>t.artistId===a.id&&t.date>=TODAY).length;
 const seenCount=a=>S.gigs.filter(g=>g.date<TODAY&&(g.artistId===a.id||g.lineup.includes(a.name))).length;
 const agencyList=()=>[...new Set(S.contacts.map(c=>c.agency).filter(Boolean))].sort();
@@ -661,7 +668,7 @@ function radioView(){
  let out='';
  if(S.tab.radio==='songs'){
   const all=songList(),shown=all.slice(0,ui.songLimit),sh=currentShow();
-  out+=`<div class="songs-page"><div class="sp-head"><div><div class="sp-title">Song database</div><div class="sp-sub">${all.length} track${all.length===1?'':'s'}${all.length!==S.songs.length?' of '+S.songs.length:''}</div></div><div class="row"><button class="btn pri" data-act="newSong">${IC.plus} Add track</button></div></div>
+  out+=`<div class="songs-page"><div class="sp-head"><div><div class="sp-title">Song database</div><div class="sp-sub">${all.length} track${all.length===1?'':'s'}${all.length!==visSongs().length?' of '+visSongs().length:''}</div></div><div class="row"><button class="btn pri" data-act="newSong">${IC.plus} Add track</button></div></div>
   <div class="sp-filters"><div class="search-wrap">${IC.search}<input class="in" id="songq" data-inp="songq" value="${h(ui.songq)}" placeholder="Search by title, artist, album or genre…" autocomplete="off"></div>
   <div style="flex:1;min-width:240px;max-width:420px"><div class="chip-input-row">${ui.themeF.map(t=>`<span class="pill pill-theme pill-removable" data-act="rmThemeF" data-t="${h(t)}" title="Remove filter">${h(t)}${IC.x}</span>`).join('')}<input id="themeF" data-chg="themeFAdd" list="theme-list" placeholder="Filter by theme…" autocomplete="off"></div></div>
   <datalist id="theme-list">${thSet().map(t=>`<option value="${h(t)}"></option>`).join('')}</datalist>
@@ -689,7 +696,8 @@ function settingsView(){
  return `<div class="grid g2"><div class="card"><h3>Installed programs</h3><p class="muted small">Add or remove programs at any time. Your data is kept when a program is switched off.</p>${['press','archive','radio'].map(m=>`<div class="item between"><div>${logo(m,20)}</div><button class="btn ${on(m)?'':'pri'}" data-act="toggleMod" data-m="${m}">${on(m)?'Remove':'Add'}</button></div>`).join('')}</div>
  <div class="card"><h3>Integrations</h3><p class="muted small">Keys are saved with your account on your own server. Setlist.fm and Bandsintown lookups are made by the server.</p><div class="grid"><label class="fld"><span>Setlist.fm API key</span><input data-chg="key" data-k="setlist" value="${h(S.keys.setlist)}" placeholder="x-api-key"></label><label class="fld"><span>Bandsintown app ID (optional)</span><input data-chg="key" data-k="bandsintown" value="${h(S.keys.bandsintown)}" placeholder="app_id"></label><label class="fld"><span>Navidrome address (for play links)</span><input data-chg="key" data-k="navidrome" value="${h(S.keys.navidrome||'')}" placeholder="https://navidrome.local:4533"></label></div></div>
  <div class="card"><h3>Data</h3><p class="muted small">Import an AccrediHub export (<code>accredihub-export.json</code>): artists, tracks, themes, PR agencies and contacts, and tour dates. Existing Reverb data is kept; anything already imported is skipped, so it is safe to run twice.</p><div class="row wrap"><button class="btn" data-act="backup">Download backup (JSON)</button><button class="btn" data-act="ahPick">Import AccrediHub data…</button><input type="file" id="ahFile" accept=".json,application/json" data-chg="ahFile" style="display:none"><button class="btn del" data-act="resetAll">Erase all my data</button></div></div>
- <div class="card"><h3>Self-hosting</h3><p class="small">The full app deploys on TrueNAS via Portainer using a stack from the GitHub repository (<code>docker-compose.yml</code>): a FastAPI container and a Postgres container, with data on a TrueNAS dataset. See the README in the repo.</p></div></div>`;
+ <div class="card"><h3>Navidrome</h3><div class="item between" style="align-items:flex-start;gap:14px"><div><b>Sync Navidrome</b><div class="muted small">${ndStatus()}</div></div><button class="btn" style="white-space:nowrap" data-act="ndSync" ${ui.nd.busy?'disabled':''}>${ui.nd.busy==='sync'?'Syncing…':'Sync Navidrome'}</button></div><div class="item between" style="align-items:flex-start;gap:14px"><div><b>Backfill Art</b><div class="muted small">Pull missing album art from Navidrome for matched tracks.</div></div><button class="btn" style="white-space:nowrap" data-act="ndArt" ${ui.nd.busy?'disabled':''}>${ui.nd.busy==='art'?'Working…':'Backfill artwork'}</button></div></div>
+ <div class="card"><h3>Self-hosting</h3><p class="small">Reverb runs as a single container on your server (for example TrueNAS via Portainer), with your data in one SQLite file in a Docker volume. See the README in the GitHub repository.</p></div></div>`;
 }
 
 function searchHTML(){
@@ -909,6 +917,30 @@ A.rmThemeF=d=>{ui.themeF=ui.themeF.filter(t=>t!==d.t);ui.songLimit=15;render()};
 A.ndOnly=(d,t)=>{ui.ndOnly=t.checked;ui.songLimit=15;render()};
 A.moreSongs=()=>{ui.songLimit+=15;render()};
 A.favSong=d=>{const s=song(d.id);s.fav=!s.fav;commit()};
+const ndNorm=x=>String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/&/g,'and').replace(/[^a-z0-9]+/g,'');
+const ndStatus=()=>ui.nd.msg||(S.nd?`Last synced ${fd(S.nd.at.slice(0,10))}: matched ${S.nd.matched} of ${S.nd.checked} tracks against ${S.nd.library} Navidrome songs.`:'Match your tracks against your Navidrome library to add play links.');
+A.ndSync=async()=>{if(ui.nd.busy)return;ui.nd.busy='sync';ui.nd.msg='Connecting to Navidrome…';render();
+ try{const st=await (await fetch('/api/navidrome/status')).json();
+  if(!st.configured){ui.nd.msg='Navidrome isn’t configured yet — set NAVIDROME_URL, NAVIDROME_USER and NAVIDROME_PASSWORD in your stack.';toast('Navidrome isn’t configured — set the NAVIDROME_* variables in your stack.');return}
+  if(!S.keys.navidrome&&st.url)S.keys.navidrome=st.url;
+  const lib=[];for(let off=0;;off+=500){const r=await fetch('/api/navidrome/library?offset='+off);const j=await r.json();if(!r.ok)throw new Error(j.error||'Navidrome error');lib.push(...j.songs);ui.nd.msg=`Scanning your library… ${lib.length} songs so far`;render();if(j.songs.length<500)break}
+  ui.nd.msg='Matching against your tracks…';render();
+  const idx=new Map();lib.forEach(x=>{const k=ndNorm(x[2])+'|'+ndNorm(x[1]);if(!idx.has(k))idx.set(k,x)});
+  const base=String(S.keys.navidrome||st.url||'').replace(/\/+$/,'');let matched=0,checked=0;
+  S.songs.forEach(s=>{const x=idx.get(ndNorm(aname(s.artistId))+'|'+ndNorm(s.title));if(!s.ndOnly)checked++;
+   if(x){s.ndId=x[0];s.ndArt=x[5]||'';s.nd=base&&x[3]?base+'/app/#/album/'+x[3]+'/show':'';if(!s.ndOnly)matched++}else if(s.ndId){s.ndId='';s.nd=''}});
+  S.nd={at:new Date().toISOString(),matched,checked,library:lib.length};ui.nd.msg='';save();toast(`Matched ${matched} of ${checked} tracks against ${lib.length} Navidrome songs.`)}
+ catch(e){ui.nd.msg='';toast(e.message)}finally{ui.nd.busy=0;render()}};
+A.ndArt=async()=>{if(ui.nd.busy)return;ui.nd.busy='art';render();
+ try{const st=await (await fetch('/api/navidrome/status')).json();
+  if(!st.configured){toast('Navidrome isn’t configured — set the NAVIDROME_* variables in your stack.');return}
+  if(!S.songs.some(s=>s.ndArt)){toast('Run Sync Navidrome first so tracks are matched.');return}
+  const url=id=>'/api/navidrome/art?id='+encodeURIComponent(id)+'&size=300';const albums={};
+  S.songs.forEach(s=>{if(s.ndArt&&!s.artUrl)s.artUrl=url(s.ndArt);const k=s.artistId+'|'+ndNorm(s.album);if(s.album&&s.artUrl)albums[k]=s.artUrl});
+  let n=new Set();S.songs.forEach(s=>{if(!s.artUrl&&s.album){const u=albums[s.artistId+'|'+ndNorm(s.album)];if(u){s.artUrl=u}}});
+  const got=new Set(S.songs.filter(s=>s.artUrl&&s.artUrl.startsWith('/api/navidrome/art')).map(s=>s.artistId+'|'+ndNorm(s.album)));
+  save();toast(`Album art linked for ${got.size} album${got.size===1?'':'s'} from Navidrome.`)}
+ catch(e){toast(e.message)}finally{ui.nd.busy=0;render()}};
 A.playNd=d=>{const x=S.songs.find(v=>v.id===d.id);if(!x)return;const base=String(S.keys.navidrome||'').replace(/\/+$/,'');if(x.nd){window.open(x.nd,'_blank','noopener');return}if(!base){toast('Set your Navidrome address in Settings first.');return}window.open(base+'/app/#/song?filter='+encodeURIComponent(JSON.stringify({title:x.title})),'_blank','noopener')};
 A.delSong=d=>{if(confirm('Delete this song from the database?')){S.songs=S.songs.filter(s=>s.id!==d.id);S.shows.forEach(sh=>sh.items=sh.items.filter(i=>i.songId!==d.id));commit()}};
 A.addSong=d=>{const sh=currentShow();if(!sh)return toast('Create a show first');sh.items.push({type:'song',songId:d.id});commit();toast('Added “'+song(d.id).title+'”')};
