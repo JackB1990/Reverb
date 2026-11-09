@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Reverb</title>
+<script src="/state.js"></script>
+<style>
+:root{--navy:#050f2a;--purple:#6a0b97;--blue:#0b47b3;--red:#d00000;--green:#076b55;--acc:#6a0b97;--bg:#f4f5fa;--card:#fff;--line:#e2e5ee;--muted:#667085;--ok:#0a7d3c;--warn:#b54708;--bad:#c01048}
+*{box-sizing:border-box}
+body{margin:0;font-family:Montserrat,Poppins,"Segoe UI",system-ui,Arial,sans-serif;background:var(--bg);color:var(--navy);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0}
+a{color:var(--acc)}
+/* logo */
+.logo{display:flex;align-items:stretch;gap:.4em}
+.logo .bar{width:.2em;min-height:100%;border-radius:1em;flex:none}
+.logo .wm{font-weight:800;letter-spacing:-.03em;line-height:1;color:var(--navy)}
+.logo .wm b{font-weight:800}
+.logo .tag{font-size:.2em;letter-spacing:.17em;font-weight:700;margin-top:.5em;white-space:nowrap;color:var(--navy)}
+.logo .in{display:flex;flex-direction:column;justify-content:center;padding:.15em 0}
+/* layout */
+#app{display:flex;min-height:100vh}
+.side{width:250px;background:#fff;border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;flex:none}
+.side .brand{padding:4px 8px 16px}
+.nav{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;cursor:pointer;border:0;background:none;text-align:left;width:100%;font-weight:600}
+.nav:hover{background:#f0f1f7}
+.nav.on{background:var(--navy);color:#fff}
+.nav .dot{width:8px;height:22px;border-radius:6px;flex:none}
+.nav .chev{margin-left:auto;font-size:11px;opacity:.7}
+.sub{display:flex;flex-direction:column;gap:2px;margin:2px 0 8px 17px;padding-left:10px;border-left:2px solid var(--line)}
+.subnav{border:0;background:none;text-align:left;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;color:#475467;width:100%}
+.subnav:hover{background:#f0f1f7}
+.subnav.on{background:var(--pc);color:#fff}
+.sep{font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:700;padding:14px 10px 4px}
+.grow{flex:1}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.top{display:flex;gap:12px;align-items:center;padding:14px 26px;background:#fff;border-bottom:3px solid var(--acc);position:sticky;top:0;z-index:5}
+.top h2{font-size:20px;white-space:nowrap}
+.search{position:relative;flex:1;max-width:460px;margin-left:auto}
+.search input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#f8f9fc}
+#sres{position:absolute;top:44px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px #0002;max-height:60vh;overflow:auto;display:none}
+#sres.show{display:block}
+#sres .r{padding:8px 12px;cursor:pointer;display:flex;gap:8px;align-items:center}
+#sres .r:hover{background:#f3f4fa}
+#sres .g{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--muted);padding:8px 12px 2px}
+.page{padding:22px 26px 60px;max-width:1250px;width:100%}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.card h3{font-size:15px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.muted{color:var(--muted)}
+.small{font-size:12px}
+.row{display:flex;gap:10px;align-items:center}
+.wrap{flex-wrap:wrap}
+.between{justify-content:space-between}
+.btn{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 12px;cursor:pointer;font-weight:600}
+.btn:hover{background:#f3f4fa}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.pri:hover{filter:brightness(1.1)}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn.del{color:var(--bad)}
+.pill{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;background:#eef0f7;color:var(--navy);white-space:nowrap}
+.pill.ok{background:#dcf5e6;color:var(--ok)}.pill.warn{background:#fff0dc;color:var(--warn)}.pill.bad{background:#fde3ec;color:var(--bad)}.pill.blue{background:#e1ebff;color:var(--blue)}.pill.red{background:#ffe3e3;color:var(--red)}.pill.green{background:#d8f3ea;color:var(--green)}.pill.purple{background:#f0e1f8;color:var(--purple)}
+.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.tab{padding:7px 14px;border-radius:99px;border:1px solid var(--line);background:#fff;cursor:pointer;font-weight:600}
+.tab.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+table{width:100%;border-collapse:collapse}
+th{font-size:11px;letter-spacing:.08em;color:var(--muted);text-align:left;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid #eef0f6;vertical-align:middle}
+tr:hover td{background:#fafbfe}
+.tw{overflow-x:auto}
+.link{cursor:pointer;font-weight:700;text-decoration:underline;text-decoration-color:#0003}
+.board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,1fr);gap:12px;overflow-x:auto;padding-bottom:8px}
+.col{background:#eceef6;border-radius:14px;padding:10px;min-height:200px}
+.col h4{margin:2px 4px 10px;font-size:12px;letter-spacing:.1em;display:flex;justify-content:space-between}
+.pc{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+.stat{font-size:28px;font-weight:800}
+.date{width:54px;flex:none;text-align:center;border-radius:10px;background:#f0f1f7;padding:6px 0}
+.date b{display:block;font-size:20px;line-height:1}
+.date span{font-size:10px;letter-spacing:.1em;font-weight:700;color:var(--muted)}
+.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid #eef0f6}
+.item:last-child{border:0}
+.star{color:#e8a200;letter-spacing:2px}
+/* forms/modal */
+.ov{position:fixed;inset:0;background:#050f2a88;display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto;z-index:50}
+.modal{background:#fff;border-radius:16px;width:100%;max-width:640px;box-shadow:0 20px 60px #0006}
+.modal.wide{max-width:860px}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.mb{padding:16px 20px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld.w{grid-column:1/-1}
+.fld span{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.fld input,.fld select,.fld textarea{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;width:100%}
+.fld select[multiple]{min-height:110px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 16px;border-radius:10px;z-index:99;max-width:90vw;box-shadow:0 8px 24px #0004}
+.bar-bg{height:10px;background:#e8eaf3;border-radius:9px;overflow:hidden}
+.bar-fg{height:100%;background:var(--acc)}
+.two{display:grid;grid-template-columns:1.2fr 1fr;gap:16px}
+.cta{border:2px dashed var(--line);background:transparent;text-align:center}
+
+/* ---- Song database (AccrediHub-style layout, Reverb Radio colours) ---- */
+.sp-head{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:22px;flex-wrap:wrap}
+.sp-title{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.sp-sub{color:var(--muted);font-size:14px;margin-top:2px}
+.songs-page .btn,.modal .btn.sm{border-radius:99px}
+.songs-page .btn.pri{background:linear-gradient(135deg,#0a9a78,#076b55);border-color:transparent;box-shadow:0 6px 18px rgba(7,107,85,.25)}
+.fld .pill-theme{color:#fff;text-transform:none;letter-spacing:0;font-weight:600}
+.songs-page .btn svg{width:14px;height:14px;margin-right:6px;vertical-align:-2px}
+.sp-filters{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+.search-wrap{position:relative;flex:1;min-width:240px;max-width:420px}
+.search-wrap svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--muted)}
+.in{width:100%;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:14px}
+.search-wrap .in{padding-left:36px}
+.in:focus,.fld input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(7,107,85,.15)}
+.chip-input-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:5px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;min-height:42px}
+.chip-input-row input{flex:1;min-width:120px;border:0!important;background:transparent;padding:4px 2px!important;font-size:14px;box-shadow:none!important}
+.chip-input-row input:focus{outline:none}
+.pill-theme{background:linear-gradient(135deg,#0a9a78,#076b55);color:#fff;box-shadow:0 3px 10px rgba(7,107,85,.25)}
+.pill-removable{cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+.pill-removable:hover{background:#fde3ec;background-image:none;color:var(--bad);box-shadow:none}
+.pill-removable svg{width:10px;height:10px}
+.track-row{display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:14px;background:#fff;border:1px solid var(--line);margin-bottom:8px;transition:border-color .12s,box-shadow .12s}
+.track-row:hover{border-color:#c4cbe0;box-shadow:0 4px 14px rgba(5,15,42,.07)}
+.art{width:52px;height:52px;border-radius:8px;flex:none;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#ffffffd0}
+.art svg{width:20px;height:20px}
+.track-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.track-title{font-weight:700;font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.track-meta{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:5px}
+.track-meta .link{color:var(--navy);font-weight:600}
+.theme-pills{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;max-width:260px;flex:none}
+.track-col{color:var(--muted);font-size:12.5px;font-family:ui-monospace,Menlo,Consolas,monospace;flex:none;min-width:84px;text-align:right}
+.track-col.len{min-width:42px}
+.track-actions{display:flex;gap:6px;align-items:center;flex:none}
+.icon-btn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#fff;border:1px solid var(--line);color:var(--muted);cursor:pointer;flex:none}
+.icon-btn:hover{background:#f3f4fa;color:var(--navy)}
+.icon-btn svg{width:15px;height:15px}
+.icon-btn.active{background:#ffe9f1;color:#e0457b;border-color:transparent}
+.icon-btn.nd{color:#16a34a}
+.icon-btn.spacer{visibility:hidden;pointer-events:none}
+.track-row.nd-only{background:transparent;border-style:dashed}
+.track-row.nd-only .art,.track-row.nd-only .track-title,.track-row.nd-only .track-meta,.track-row.nd-only .track-col{opacity:.45;filter:grayscale(1)}
+.empty-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty-state svg{width:36px;height:36px;opacity:.5;margin-bottom:12px}
+.fade-in{animation:fadeIn .35s ease both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media(max-width:1000px){.theme-pills{display:none}.track-col.rel{display:none}}
+
+/* ---- Artists (AccrediHub-style) ---- */
+.pg-art .btn,.hero-panel .btn{border-radius:99px}
+.pg-art .btn.pri{background:linear-gradient(135deg,#8a2fc0,#6a0b97);border-color:transparent;box-shadow:0 6px 18px rgba(106,11,151,.25)}
+.pg-art .btn svg{width:14px;height:14px;margin-right:6px;vertical-align:-2px}
+.artist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:20px}
+.artist-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:14px;cursor:pointer;transition:transform .1s,box-shadow .14s}
+.artist-card:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(5,15,42,.10)}
+.artist-photo{width:100%;aspect-ratio:1/1;border-radius:50%;background-size:cover;background-position:center;margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:#ffffffd9;font-weight:800;font-size:28px;letter-spacing:.02em}
+.artist-card-name{font-weight:700;font-size:14.5px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px}
+.artist-card-count{font-size:12px;color:var(--muted);text-align:center;margin-top:2px}
+.hero-panel{background:linear-gradient(145deg,rgba(106,11,151,.10),rgba(11,71,179,.05) 60%,transparent);border:1px solid var(--line);border-radius:22px;padding:28px;display:flex;gap:24px;align-items:center;flex-wrap:wrap;margin-bottom:32px}
+.hero-panel .artist-photo{width:130px;margin:0;flex:none}
+.ap-section{margin-bottom:40px}
+.ap-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.ap-title{font-size:18px;font-weight:800;display:flex;align-items:center;gap:8px}
+.ap-title svg{width:18px;height:18px}
+.ap-count{color:var(--muted);font-size:12.5px;font-weight:500}
+.ap-empty{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;color:var(--muted);font-size:13.5px}
+.album-art{width:216px;height:216px;border-radius:22px;flex:none}
+.album-art svg{width:72px;height:72px}
+.art-single{width:104px;height:104px;border-radius:14px}
+.art-single svg{width:32px;height:32px}
+.track-no{width:34px;flex:none;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums}
+.track-row .tk-ico{width:44px;height:44px;border-radius:10px;background:#eef0f7;color:var(--muted)}
+.album-block{display:flex;gap:18px;align-items:flex-start;margin-bottom:30px}
+@media(max-width:700px){.album-block{flex-direction:column}.album-art{width:100%;height:auto;aspect-ratio:1/1;max-width:260px}}
+.pg-press .btn,.pg-press .hero-panel .btn{border-radius:99px}
+.pg-press .btn.pri{background:linear-gradient(135deg,#1a5fd6,#0b47b3);border-color:transparent;box-shadow:0 6px 18px rgba(11,71,179,.25)}
+.pg-press .hero-panel{background:linear-gradient(145deg,rgba(11,71,179,.10),rgba(106,11,151,.04) 60%,transparent)}
+/* auth screens */
+.auth{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;flex-direction:column;gap:22px}
+.box{background:#fff;border:1px solid var(--line);border-radius:18px;padding:28px;width:100%;max-width:520px;box-shadow:0 10px 40px #0001}
+.mod{display:flex;gap:14px;align-items:center;padding:14px;border:2px solid var(--line);border-radius:14px;cursor:pointer;margin-bottom:10px;background:#fff;width:100%;text-align:left}
+.mod.on{border-color:var(--navy);background:#f6f7fd}
+.chk{width:24px;height:24px;border-radius:7px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:800;flex:none}
+.mod.on .chk{background:var(--navy);border-color:var(--navy);color:#fff}
+.demo{background:#fff8e1;color:#7a5b00;font-size:12px;padding:6px 26px;border-bottom:1px solid #f2e2a8}
+@media(max-width:860px){.sub{flex-direction:row;flex-wrap:wrap;width:100%;margin:0 0 6px;border:0;padding:0}.subnav{width:auto}#app{flex-direction:column}.side{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center}.side .brand{width:100%;padding-bottom:6px}.sep{display:none}.nav{width:auto}.grow{display:none}.two{grid-template-columns:1fr}.mb{grid-template-columns:1fr}.top{flex-wrap:wrap;padding:12px 16px}.page{padding:16px}}
+@media print{body *{visibility:hidden}#runsheet,#runsheet *{visibility:visible}#runsheet{position:absolute;left:0;top:0;width:100%;padding:0}.noprint{display:none!important}.ov{position:static;background:none;padding:0}.modal{box-shadow:none;max-width:none}}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.cal-dow{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:center;padding-bottom:4px}
+.cal-cell{min-height:92px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:7px;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.cal-cell.cal-out{opacity:.35}.cal-cell.cal-today{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.cal-daynum{font-size:12px;font-weight:700;color:var(--muted);flex:none}
+.cal-event{font-size:11px;padding:2px 7px;border-radius:6px;background:#eef0f7;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;flex:none}
+.cal-event:hover{filter:brightness(.95)}
+.cal-event.ev-warn{background:#fff0dc;color:var(--warn)}.cal-event.ev-ok{background:#dcf5e6;color:var(--ok)}.cal-event.ev-bad{background:#fde3ec;color:var(--bad)}.cal-event.ev-blue{background:#e1ebff;color:var(--blue)}
+.month-group{background:#fff;border:1px solid var(--line);border-radius:16px;margin-bottom:12px;overflow:hidden}
+.month-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none}
+.month-header:hover{background:#f6f7fb}
+.month-title{font-size:14.5px;font-weight:700;color:var(--navy)}
+.month-chevron{display:flex;color:var(--muted);transition:transform .15s}.month-chevron svg{width:16px;height:16px}.month-chevron.open{transform:rotate(90deg)}
+.month-body{padding:10px 18px 8px;border-top:1px solid var(--line)}
+.cal-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.prog{height:8px;border-radius:99px;background:#e8eaf3;overflow:hidden}.prog>i{display:block;height:100%;background:var(--blue);transition:width .25s}
+@media(max-width:700px){.cal-cell{min-height:58px;padding:4px}.cal-event{font-size:9.5px;padding:1px 4px}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="toast" class="toast" style="display:none"></div>
+<script>
+/* ===================== helpers ===================== */
+const TODAY=(()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})();
+const emptyState=()=>({v:4,auth:true,setup:false,modules:{press:true,archive:true,radio:true},view:'dashboard',tab:{press:'apps',archive:'all',radio:'songs'},artists:[],contacts:[],agencies:[],tours:[],gigs:[],apps:[],songs:[],shows:[],keys:{setlist:'',bandsintown:'',navidrome:''}});
+const $=s=>document.querySelector(s);
+const h=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const D=s=>new Date(s+'T12:00:00');
+const fd=s=>s?D(s).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'—';
+const dayNum=s=>D(s).getDate();
+const mon=s=>D(s).toLocaleDateString('en-GB',{month:'short'}).toUpperCase();
+const addDays=(s,n)=>{const d=D(s);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)};
+const mmss=s=>Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+const plen=t=>{const p=String(t).split(':').map(Number);return (p[0]||0)*60+(p[1]||0)};
+const pad=n=>String(n).padStart(2,'0');
+const clock=(start,secs)=>{const [H,M]=start.split(':').map(Number);const t=H*3600+M*60+secs;return pad(Math.floor(t/3600)%24)+':'+pad(Math.floor(t%3600/60))};
+const uid=p=>p+Math.random().toString(36).slice(2,8);
+const byDate=(a,b)=>(a.date||'').localeCompare(b.date||'');
+const stars=n=>n?'<span class="star">'+'★'.repeat(n)+'<span style="color:#d5d8e2">'+'★'.repeat(5-n)+'</span></span>':'<span class="muted small">unrated</span>';
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',3800)}
+function download(name,text,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;document.body.appendChild(a);a.click();a.remove()}
+
+/* ===================== brand ===================== */
+const LOGO={"reverb": "data:image/png;base64,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", "press": "data:image/png;base64,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", "archive": "data:image/png;base64,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", "radio": "data:image/png;base64,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"};
+
+const BR={
+ reverb:{c:'#6a0b97',sub:'',tag:'SOFTWARE FOR MUSIC PROFESSIONALS',label:'Reverb'},
+ press:{c:'#0b47b3',sub:'Press',gap:' ',tag:'PR DATABASE & APPLICATION TRACKER',label:'Reverb Press',desc:'Bands, upcoming tours, PR contacts and a press application tracker.'},
+ archive:{c:'#d00000',sub:'Archive',tag:'GIG AND FESTIVAL ARCHIVE',label:'Reverb Archive',desc:'A record of gigs and festivals you have attended, plus upcoming ones.'},
+ radio:{c:'#076b55',sub:'Radio',tag:'DATABASE MANAGER & PLAYLIST BUILDER',label:'Reverb Radio',desc:'Song database and a playlist builder for every show.'}
+};
+function logo(k,px,notag){return `<img src="${LOGO[k]}" alt="${BR[k].label} – ${BR[k].tag}" style="width:${Math.round(px*(notag?9:7))}px;max-width:100%;height:auto;display:block;mix-blend-mode:multiply">`}
+
+/* ===================== seed data ===================== */
+function seed(){
+ const artists=[
+  ['a1','The Hollow Pines','Indie folk','Leeds'],['a2','Neon Cartel','Synth-pop','Manchester'],['a3','Sable & Stone','Alt-rock','Sheffield'],
+  ['a4','Velvet Static','Shoegaze','Bristol'],['a5','Marlowe Park','Singer-songwriter','York'],['a6','Glass Orchard','Dream pop','Glasgow'],
+  ['a7','Tiny Parliament','Post-punk','Newcastle'],['a8','Dust Choir','Americana','Hull'],['a9','Halcyon Drive','Indie rock','Liverpool'],['a10','The Weekend Pilots','Power pop','Brighton']
+ ].map(([id,name,genre,origin])=>({id,name,genre,origin,mbid:'',notes:''}));
+ const contacts=[
+  {id:'c1',name:'Priya Nair',agency:'Lantern PR',role:'Press officer',email:'priya@lantern-pr.example.com',phone:'020 7946 0101',artists:['a1','a6'],last:'2026-10-28'},
+  {id:'c2',name:'Tom Ashworth',agency:'Northbound Press',role:'Head of publicity',email:'tom@northbound.example.com',phone:'0113 496 0102',artists:['a7','a3'],last:'2026-10-22'},
+  {id:'c3',name:'Elena Marsh',agency:'Copper Door Media',role:'Press officer',email:'elena@copperdoor.example.com',phone:'0141 496 0103',artists:['a6'],last:'2026-10-15'},
+  {id:'c4',name:'Jonah Reyes',agency:'Lantern PR',role:'Tour publicist',email:'jonah@lantern-pr.example.com',phone:'020 7946 0104',artists:['a2'],last:'2026-10-30'},
+  {id:'c5',name:'Sam Whitfield',agency:'Fieldnote Publicity',role:'Freelance publicist',email:'sam@fieldnote.example.com',phone:'0114 496 0105',artists:['a3','a8'],last:'2026-09-30'},
+  {id:'c6',name:'Hana Okafor',agency:'Northbound Press',role:'Press officer',email:'hana@northbound.example.com',phone:'0113 496 0106',artists:['a4','a9','a10'],last:'2026-10-19'}
+ ];
+ const T=(artistId,tour,date,venue,city,status)=>({id:uid('t'),artistId,tour,date,venue,city,status});
+ const tours=[
+  T('a1','Winter Lanterns Tour','2026-11-20','Brudenell Social Club','Leeds','On sale'),T('a1','Winter Lanterns Tour','2026-11-22','Gorilla','Manchester','Sold out'),T('a1','Winter Lanterns Tour','2026-11-25',"King Tut's",'Glasgow','On sale'),
+  T('a6','Orchard Lights Tour','2026-11-28','Òran Mór','Glasgow','On sale'),T('a6','Orchard Lights Tour','2026-11-29',"Queen's Hall",'Edinburgh','On sale'),
+  T('a2','Static Bloom UK','2026-12-04','Boiler Shop','Newcastle','On sale'),T('a2','Static Bloom UK','2026-12-05','Project House','Leeds','On sale'),T('a2','Static Bloom UK','2027-01-16','KOKO','London','On sale'),
+  T('a7','Parliament Sessions','2026-12-11','The Cluny','Newcastle','Sold out'),T('a7','Parliament Sessions','2026-12-12','Fibbers','York','On sale'),
+  T('a3','Concrete Hearts Tour','2027-02-12','The Foundry','Sheffield','On sale'),T('a3','Concrete Hearts Tour','2027-02-13','Rescue Rooms','Nottingham','On sale'),T('a3','Concrete Hearts Tour','2027-02-14','The Fleece','Bristol','On sale')
+ ];
+ const G=(id,kind,title,artistId,date,venue,city,o={})=>Object.assign({id,kind,title,artistId,date,endDate:'',venue,city,support:[],lineup:[],setlist:[],rating:0,review:'',published:'',photos:'',cost:0},o);
+ const gigs=[
+  G('g1','Gig','Velvet Static','a4','2026-10-17','The Louisiana','Bristol',{support:['Pale Hours'],setlist:['Slow Weather','Blue Hour','Cathedral of Static','Afterimage','Undertow','Tidal'],rating:5,review:'Wall of sound in a tiny room. Best gig of the year so far.',published:'https://example.com/reviews/velvet-static-louisiana',photos:'https://photos.example.com/velvet-static',cost:14}),
+  G('g2','Gig','The Hollow Pines','a1','2026-09-26','Brudenell Social Club','Leeds',{support:['Wren Valley'],setlist:['Low Tide Letters','Hollow Road','Salt & Thread','Paper Boats'],rating:4,review:'Warm, intimate set; the new songs sound great live.',published:'https://example.com/reviews/hollow-pines-brudenell',cost:16}),
+  G('g3','Festival','Northern Lights Weekender','','2026-08-28','Whitby Pavilion Grounds','Whitby',{endDate:'2026-08-30',lineup:['Glass Orchard','Tiny Parliament','Velvet Static'],rating:4,review:'Great weather, great line-up. Tiny Parliament stole Saturday.',photos:'https://photos.example.com/nlw-2026',cost:145}),
+  G('g4','Festival','Riverside Sessions Festival','','2026-07-18','Rowntree Park','York',{endDate:'2026-07-19',lineup:['Marlowe Park','Dust Choir','Halcyon Drive','The Weekend Pilots'],rating:4,review:'Relaxed family-friendly weekend. Dust Choir were superb.',photos:'https://photos.example.com/riverside-2026',cost:89}),
+  G('g5','Gig','Tiny Parliament','a7','2026-06-13','The Cluny','Newcastle',{support:['Minute Silence'],setlist:['Parliament Hill','Quorum','Filibuster'],rating:5,review:'Sharp, tight and loud.',cost:12}),
+  G('g6','Gig','Neon Cartel','a2','2026-03-07','Manchester Academy 2','Manchester',{support:['Lights Out Lisa'],setlist:['Midnight Arcade','Chrome Hearts'],rating:3,review:'Great synths, muddy sound.',cost:18}),
+  G('g7','Gig','Halcyon Drive','a9','2025-11-14','Leeds Beckett SU','Leeds',{setlist:['Halcyon Days','Midland Main'],rating:4,cost:15}),
+  G('g8','Gig','The Hollow Pines','a1','2026-11-20','Brudenell Social Club','Leeds',{support:['Wren Valley']}),
+  G('g9','Gig','Glass Orchard','a6','2026-11-28','Òran Mór','Glasgow',{}),
+  G('g10','Gig','Tiny Parliament','a7','2026-12-12','Fibbers','York',{}),
+  G('g11','Gig','Sable & Stone','a3','2027-02-12','The Foundry','Sheffield',{}),
+  G('g12','Festival','Riverside Sessions Festival 2027','','2027-07-17','Rowntree Park','York',{endDate:'2027-07-18'})
+ ];
+ const apps=[
+  {id:'p1',type:'Photo pass',artistId:'a1',gigId:'g8',contactId:'c1',status:'Requested',requested:'2026-10-28',deadline:'2026-11-13',followUp:'2026-11-04',link:'',notes:'Photographing first three songs only.'},
+  {id:'p2',type:'Review request',artistId:'a6',gigId:'g9',contactId:'c3',status:'Draft',requested:'',deadline:'2026-11-20',followUp:'2026-11-12',link:'',notes:'Pitch as a preview feature for the November issue.'},
+  {id:'p3',type:'Accreditation',artistId:'a7',gigId:'g10',contactId:'c2',status:'Approved',requested:'2026-10-20',deadline:'2026-12-01',followUp:'',link:'',notes:'Guest plus-one confirmed.'},
+  {id:'p4',type:'Interview',artistId:'a2',gigId:'',contactId:'c4',status:'Requested',requested:'2026-10-30',deadline:'2026-12-01',followUp:'2026-11-09',link:'',notes:'Phone interview ahead of the December dates.'},
+  {id:'p5',type:'Guestlist',artistId:'a3',gigId:'g11',contactId:'c5',status:'Draft',requested:'',deadline:'2027-01-29',followUp:'',link:'',notes:''},
+  {id:'p6',type:'Review request',artistId:'a4',gigId:'g1',contactId:'c6',status:'Completed',requested:'2026-10-02',deadline:'2026-10-15',followUp:'',link:'https://example.com/reviews/velvet-static-louisiana',notes:'Published 21 Oct.'},
+  {id:'p7',type:'Photo pass',artistId:'a10',gigId:'g4',contactId:'c6',status:'Declined',requested:'2026-06-20',deadline:'2026-07-10',followUp:'',link:'',notes:'Festival photo pit full.'},
+  {id:'p8',type:'Accreditation',artistId:'',gigId:'g12',contactId:'',status:'Requested',requested:'2026-11-02',deadline:'2027-05-31',followUp:'2026-12-01',link:'',notes:'Early press accreditation window.'}
+ ];
+ const raw=[
+  ['a1','Lantern Season','Winter Lanterns',2026,'3:48','Indie folk'],['a1','Paper Boats','Winter Lanterns',2026,'4:12','Indie folk'],['a1','Low Tide Letters','Salt & Thread',2024,'3:31','Indie folk'],['a1','Hollow Road','Salt & Thread',2024,'4:05','Indie folk'],
+  ['a2','Static Bloom','Static Bloom',2026,'3:22','Synth-pop'],['a2','Chrome Hearts','Static Bloom',2026,'3:55','Synth-pop'],['a2','Midnight Arcade','Night Shift',2023,'3:40','Synth-pop'],
+  ['a3','Concrete Hearts','Concrete Hearts',2026,'4:01','Alt-rock'],['a3','Rust & Gold','Concrete Hearts',2026,'3:29','Alt-rock'],['a3','Burn the Map','Fault Lines',2023,'4:37','Alt-rock'],
+  ['a4','Slow Weather','Undertow',2026,'5:14','Shoegaze'],['a4','Cathedral of Static','Undertow',2026,'6:02','Shoegaze'],['a4','Blue Hour','Afterimage',2024,'4:48','Shoegaze'],
+  ['a5','Kingfisher','Small Hours',2025,'3:17','Singer-songwriter'],['a5','Sunday Rain','Small Hours',2025,'2:58','Singer-songwriter'],
+  ['a6','Orchard Lights','Orchard Lights',2026,'3:44','Dream pop'],['a6','Honey Fog','Orchard Lights',2026,'4:20','Dream pop'],
+  ['a7','Parliament Hill','Standing Orders',2026,'2:51','Post-punk'],['a7','Quorum','Standing Orders',2026,'3:08','Post-punk'],['a7','Filibuster','Early Day Motion',2024,'2:36','Post-punk'],
+  ['a8','Dust Bowl Lullaby','Wide Skies',2025,'4:15','Americana'],['a8','Long Way to Hull','Wide Skies',2025,'3:50','Americana'],
+  ['a9','Halcyon Days','Coastline',2025,'3:36','Indie rock'],['a9','Midland Main','Coastline',2025,'3:19','Indie rock'],
+  ['a10','Saturday Pilot','Take Off Tonight',2026,'2:49','Power pop'],['a10','Runway Kiss','Take Off Tonight',2026,'3:05','Power pop']
+ ];
+ const songs=raw.map((r,i)=>({id:'s'+(i+1),artistId:r[0],title:r[1],album:r[2],year:r[3],len:plen(r[4]),genre:r[5]}));
+ const sg=n=>({type:'song',songId:'s'+n}),tk=(label,m)=>({type:'talk',label,secs:m*60}),jg=(label,s)=>({type:'jingle',label,secs:s});
+ const shows=[
+  {id:'sh1',name:'The Friday Reverb',date:'2026-11-06',start:'19:00',mins:120,items:[jg('Show opener',20),sg(16),sg(1),tk('Welcome & what\'s on tonight',2),sg(5),sg(11),jg('Station ID',10),sg(18),sg(23),tk('Gig guide: this weekend',3),sg(8),sg(21),sg(25)]},
+  {id:'sh2',name:'Fresh Cuts',date:'2026-11-13',start:'21:00',mins:60,items:[jg('Show opener',20),sg(2),sg(17)]},
+  {id:'sh3',name:'The Friday Reverb',date:'2026-10-30',start:'19:00',mins:120,items:[jg('Show opener',20),sg(12),sg(6),sg(19),sg(14),tk('Interview clip: Neon Cartel',6),sg(7),sg(22)]}
+ ];
+ return {auth:false,setup:false,modules:{press:true,archive:true,radio:true},view:'dashboard',tab:{press:'apps',archive:'all',radio:'songs'},artists,contacts,tours,gigs,apps,songs,shows,keys:{setlist:'',bandsintown:''}};
+}
+let S=window.__STATE||emptyState();S.auth=true;
+const SX={s1:['winter','hope'],s2:['childhood','loss'],s3:['letters','distance'],s4:['travel','home'],s5:['nightlife','nostalgia'],s6:['romance','technology'],s7:['nostalgia','nightlife'],s8:['city life','heartbreak'],s9:['ageing','memory'],s10:['escape','travel'],s11:['weather','anxiety'],s12:['faith','noise'],s13:['dusk','longing'],s14:['nature','freedom'],s15:['weather','solitude'],s16:['home','summer'],s17:['summer','romance'],s18:['politics','protest'],s19:['politics','power'],s20:['politics','frustration'],s21:['family','history'],s22:['travel','home'],s23:['nostalgia','summer'],s24:['travel','commuting'],s25:['weekend','flying'],s26:['romance','flying']};
+const NDURL=id=>'https://navidrome.example.com/app/#/song/'+id;
+function migrate(){
+ if(S.v>=2)return;
+ S.songs.forEach((s,i)=>{
+  if(!s.themes)s.themes=SX[s.id]||[];
+  if(s.fav===undefined)s.fav=['s1','s11','s18','s21'].includes(s.id);
+  if(s.nd===undefined)s.nd=(i%3!==0)?NDURL(s.id):'';
+  if(s.released===undefined)s.released=s.year?`${s.year}-${pad(1+(i*5)%10)}-${pad(1+(i*7)%27)}`:'';
+  if(s.artUrl===undefined)s.artUrl='';
+  if(s.ndOnly===undefined)s.ndOnly=false;
+ });
+ if(!S.songs.some(s=>s.id==='s27'))S.songs.push({id:'s27',artistId:'a5',title:'Untitled Demo 04',album:'',year:'',released:'',len:197,genre:'',themes:[],fav:false,nd:NDURL('s27'),ndOnly:true,artUrl:''});
+ if(!S.songs.some(s=>s.id==='s28'))S.songs.push({id:'s28',artistId:'a8',title:'Track 07',album:'',year:'',released:'',len:222,genre:'',themes:[],fav:false,nd:NDURL('s28'),ndOnly:true,artUrl:''});
+ S.keys=S.keys||{};if(S.keys.navidrome===undefined)S.keys.navidrome='';
+ S.v=2;save();
+}
+migrate();
+function migrate3(){
+ if(S.v>=3)return;
+ const BIO={a1:['Leeds folk quintet known for close harmonies and candlelit winter shows.',2016],a2:['Manchester synth-pop trio chasing late-night arcade glow.',2019],a3:['Sheffield alt-rock four-piece with a big, brooding sound.',2012],a4:['Bristol shoegaze outfit building walls of reverb.',2014],a5:['York singer-songwriter with a quiet, observational style.',2018],a6:['Glasgow dream-pop duo: hazy melodies and tape hiss.',2020],a7:['Newcastle post-punk band; short, sharp songs about politics.',2017],a8:['Hull Americana band with wide-open harmonies.',2015],a9:['Liverpool indie rockers: coastal road-trip anthems.',2013],a10:['Brighton power-pop band, all hooks and no filler.',2011]};
+ S.artists.forEach(a=>{if(a.bio===undefined){const b=BIO[a.id]||[a.notes||'',''];a.bio=b[0];a.yearFormed=b[1];a.yearSplit='';a.isAi=false;a.complete=['a1','a2','a4','a6','a7'].includes(a.id);a.photoUrl=''}});
+ S.tours.forEach((t,i)=>{if(t.ticketUrl===undefined)t.ticketUrl=(t.status==='On sale'&&i%2===0)?`https://tickets.example.com/${t.artistId}-${t.date}`:''});
+ S.contacts.forEach(c=>{if(c.notes===undefined)c.notes=''});
+ const cnt={};S.songs.forEach(s=>{if(s.trackNo===undefined){if(s.album){const k=s.artistId+'|'+s.album;cnt[k]=(cnt[k]||0)+1;s.trackNo=cnt[k]}else s.trackNo=''}});
+ if(!S.artists.some(a=>a.id==='a11'))S.artists.push({id:'a11',name:'Synthetic Sunday',genre:'Synth-pop',origin:'Generated',mbid:'',notes:'',bio:'An AI-generated act: check your station policy before airing.',photoUrl:'',yearFormed:2025,yearSplit:'',isAi:true,complete:false});
+ if(!S.songs.some(s=>s.id==='s29'))S.songs.push({id:'s29',artistId:'a11',title:'Algorithm Love',album:'',year:2026,released:'2026-09-12',len:204,genre:'Synth-pop',themes:['romance','technology'],fav:false,nd:NDURL('s29'),ndOnly:false,artUrl:'',trackNo:''});
+ S.v=3;save();
+}
+migrate3();
+function migrate4(){
+ if(S.v>=4)return;
+ S.agencies=S.agencies||[];
+ const NOTES={'Lantern PR':'London-based press agency with an indie and folk roster. Prefers pitches by email early in the week.','Northbound Press':'Leeds agency, strong on regional press and festivals.','Copper Door Media':'Scottish scene specialists; quick to turn around accreditation.','Fieldnote Publicity':'Freelance publicist with a small roster and very responsive.'};
+ S.contacts.forEach(c=>{if(c.agencyId===undefined){const nm=c.agency||'Unknown agency';let ag=S.agencies.find(a=>a.company.toLowerCase()===nm.toLowerCase());if(!ag){ag={id:uid('ag'),company:nm,notes:NOTES[nm]||''};S.agencies.push(ag)}c.agencyId=ag.id;c.agency=ag.company}if(!c.linkNotes)c.linkNotes={}});
+ if(!S.agencies.some(a=>a.company==='Static Room PR'))S.agencies.push({id:uid('ag'),company:'Static Room PR',notes:'Met at a showcase festival; no contact yet.'});
+ const cd=S.agencies.find(a=>a.company==='Copper Door Media');
+ if(cd&&!S.contacts.some(c=>c.agencyId===cd.id&&!c.name))S.contacts.push({id:uid('c'),name:'',agency:cd.company,agencyId:cd.id,role:'',email:'',phone:'',notes:'',artists:['a5'],last:'',linkNotes:{a5:'Handles Marlowe Park press for the festival season.'}});
+ S.v=4;save();
+}
+migrate4();
+let saveT=null,saveBusy=false,saveAgain=false;
+function save(){clearTimeout(saveT);saveT=setTimeout(push,500)}
+async function push(){if(saveBusy){saveAgain=true;return}saveBusy=true;
+ try{const r=await fetch('/api/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(S)});if(r.status===401){location.href='/login.html';return}if(!r.ok)throw new Error('HTTP '+r.status)}
+ catch(e){toast('Could not save to the server — check the connection. Changes are kept on this page until it works.');saveAgain=true;setTimeout(()=>{if(saveAgain){saveAgain=false;push()}},8000)}
+ saveBusy=false;if(saveAgain&&!saveT){saveAgain=false;push()}}
+window.addEventListener('beforeunload',e=>{if(saveT||saveBusy){e.preventDefault();e.returnValue=''}});
+const ui={agq:'',artq:'',artSort:'name',themeF:[],ndOnly:false,songLimit:15,sf:null,open:{},q:'',pick:{press:true,archive:true,radio:true},showId:null,songq:'',songg:'',pstat:'all',cal:{y:+TODAY.slice(0,4),m:+TODAY.slice(5,7)-1},calSt:'',calPast:false,calOpen:{},scan:null};
+let modal=null;
+
+/* ===================== lookups ===================== */
+const artist=id=>S.artists.find(a=>a.id===id);
+const aname=id=>artist(id)?.name||'—';
+const gig=id=>S.gigs.find(g=>g.id===id);
+const song=id=>S.songs.find(s=>s.id===id);
+const contact=id=>S.contacts.find(c=>c.id===id);
+const on=m=>S.modules[m];
+const seen=a=>S.gigs.some(g=>g.date<TODAY&&(g.artistId===a.id||g.lineup.includes(a.name)));
+const gigLabel=g=>g?`${g.title} · ${g.city} · ${fd(g.date)}`:'—';
+function playCount(songId){return S.shows.filter(s=>s.date<TODAY).reduce((n,s)=>n+s.items.filter(i=>i.songId===songId).length,0)}
+function showSecs(sh){return sh.items.reduce((t,i)=>t+(i.type==='song'?(song(i.songId)?.len||0):i.secs),0)}
+
+/* ===================== modal & forms ===================== */
+function field(f,v){
+ const val=v&&v[f.k]!==undefined?v[f.k]:(f.def??'');let inp;
+ if(f.t==='check')return `<label class="fld w" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="${f.k}" value="1" ${val?'checked':''} style="width:16px;height:16px"><span style="text-transform:none;letter-spacing:0;font-size:13.5px;color:var(--navy);font-weight:500">${f.l}</span></label>`;
+ if(f.t==='photo'){const v0=String(val||''),dat=v0.startsWith('data:');return `<div class="fld w"><span>${f.l}</span><div class="row"><div class="art" id="ph-prev-${f.k}" style="${artBg({artUrl:v0,album:f.seed||'x'})};width:44px;height:44px;border-radius:50%">${v0?'':IC.disc}</div><input type="hidden" name="${f.k}" value="${h(v0)}"><input id="ph-${f.k}" data-inp="photoUrl" data-k="${f.k}" value="${h(dat?'':v0)}" placeholder="${dat?'Uploaded image':'Image URL, or upload →'}" style="flex:1;min-width:0;width:auto"><input type="file" accept="image/*" data-chg="photoUpload" data-k="${f.k}" style="display:none"><button type="button" class="btn sm" data-act="photoPick" data-k="${f.k}">Upload</button></div></div>`}
+ if(f.t==='select')inp=`<select name="${f.k}">${f.o.map(o=>{const [ov,ol]=Array.isArray(o)?o:[o,o];return `<option value="${h(ov)}" ${String(ov)===String(val)?'selected':''}>${h(ol)}</option>`}).join('')}</select>`;
+ else if(f.t==='multi'){const arr=Array.isArray(val)?val:[];inp=`<select name="${f.k}" multiple>${f.o.map(([ov,ol])=>`<option value="${h(ov)}" ${arr.includes(ov)?'selected':''}>${h(ol)}</option>`).join('')}</select>`}
+ else if(f.t==='textarea')inp=`<textarea name="${f.k}" rows="${f.rows||3}">${h(val)}</textarea>`;
+ else inp=`<input name="${f.k}" type="${f.t||'text'}" value="${h(val)}" ${f.req?'required':''} ${f.step?`step="${f.step}"`:''} ${f.list?`list="dl-${f.k}"`:''} ${f.ph?`placeholder="${h(f.ph)}"`:''}>${f.list?`<datalist id="dl-${f.k}">${f.list.map(x=>`<option value="${h(x)}"></option>`).join('')}</datalist>`:''}`;
+ return `<label class="fld ${f.w?'w':''}"><span>${f.l}</span>${inp}</label>`;
+}
+function collect(form,fields){const f=new FormData(form),o={};fields.forEach(x=>{o[x.k]=x.t==='multi'?f.getAll(x.k):x.t==='check'?f.has(x.k):(f.get(x.k)??'')});return o}
+function openForm(title,fields,vals,onSave,o={}){modal={title,fields,body:fields.map(f=>field(f,vals)).join(''),save:onSave,saveLabel:o.saveLabel||'Save',extra:o.extra||'',wide:o.wide};render()}
+function closeModal(){modal=null;render()}
+const artOpts=(blank)=>[...(blank?[['','— none —']]:[]),...S.artists.map(a=>[a.id,a.name])];
+const gigOpts=()=>[['','— none —'],...S.gigs.slice().sort(byDate).map(g=>[g.id,gigLabel(g)])];
+const conOpts=()=>[['','— none —'],...S.contacts.map(c=>[c.id,c.name?`${c.name} (${c.agency})`:c.agency])];
+
+/* ===================== views ===================== */
+function tabs(group,list){return `<div class="tabs">${list.map(([v,l])=>`<button class="tab ${S.tab[group]===v?'on':''}" data-act="tab" data-g="${group}" data-v="${v}">${l}</button>`).join('')}</div>`}
+function cta(m){return `<div class="card cta"><div style="display:flex;justify-content:center;margin-bottom:10px">${logo(m,22,true)}</div><p class="muted small">${BR[m].desc}</p><button class="btn pri" data-act="enable" data-m="${m}">Add ${BR[m].label}</button></div>`}
+
+function dashboard(){
+ const upG=S.gigs.filter(g=>g.date>=TODAY).sort(byDate).slice(0,4);
+ const due=S.apps.filter(p=>['Draft','Requested'].includes(p.status)&&p.followUp&&p.followUp<=addDays(TODAY,7)).sort((a,b)=>a.followUp.localeCompare(b.followUp));
+ const nx=S.shows.filter(s=>s.date>=TODAY).sort(byDate)[0];
+ const attended=S.gigs.filter(g=>g.date<TODAY&&g.date.startsWith('2026'));
+ let out=`<div class="grid g3" style="margin-bottom:16px">`;
+ out+=`<div class="card"><div class="muted small">Artists tracked</div><div class="stat">${S.artists.length}</div></div>`;
+ if(on('archive'))out+=`<div class="card"><div class="muted small">Gigs & festivals attended in 2026</div><div class="stat" style="color:var(--red)">${attended.length}</div></div>`;
+ if(on('press'))out+=`<div class="card"><div class="muted small">Open press requests</div><div class="stat" style="color:var(--blue)">${S.apps.filter(p=>['Draft','Requested'].includes(p.status)).length}</div></div>`;
+ if(on('radio'))out+=`<div class="card"><div class="muted small">Songs in database</div><div class="stat" style="color:var(--green)">${S.songs.length}</div></div>`;
+ out+=`</div><div class="grid g2">`;
+ if(on('archive')){out+=`<div class="card"><h3>Upcoming gigs & festivals <span class="btn sm" data-act="nav" data-v="archive">Open</span></h3>${upG.map(g=>`<div class="item"><div class="date"><b>${dayNum(g.date)}</b><span>${mon(g.date)}</span></div><div><div class="link" data-act="openGig" data-id="${g.id}">${h(g.title)}</div><div class="muted small">${h(g.venue)}, ${h(g.city)}</div></div></div>`).join('')||'<p class="muted">Nothing booked.</p>'}</div>`}else out+=cta('archive');
+ if(on('press')){out+=`<div class="card"><h3>Follow-ups due this week <span class="btn sm" data-act="nav" data-v="press">Open</span></h3>${due.map(p=>`<div class="item"><span class="pill ${p.followUp<=TODAY?'bad':'warn'}">${p.followUp<=TODAY?'Overdue':fd(p.followUp)}</span><div><div><b>${p.type}</b> · ${h(p.artistId?aname(p.artistId):gigLabel(gig(p.gigId)))}</div><div class="muted small">${p.contactId?h(contact(p.contactId).name)+' · '+h(contact(p.contactId).agency):'No contact set'}</div></div></div>`).join('')||'<p class="muted">All caught up.</p>'}</div>`}else out+=cta('press');
+ if(on('radio')){const secs=nx?showSecs(nx):0;const pct=nx?Math.min(100,Math.round(secs/(nx.mins*60)*100)):0;out+=`<div class="card"><h3>Next show <span class="btn sm" data-act="nav" data-v="radio">Open</span></h3>${nx?`<div><b>${h(nx.name)}</b> · ${fd(nx.date)} at ${nx.start}</div><div class="muted small" style="margin:6px 0">${mmss(secs)} of ${nx.mins}:00 planned (${pct}%)</div><div class="bar-bg"><div class="bar-fg" style="width:${pct}%;background:var(--green)"></div></div><button class="btn sm" style="margin-top:10px" data-act="editShow" data-id="${nx.id}">Build playlist</button>`:'<p class="muted">No upcoming shows.</p>'}</div>`}else out+=cta('radio');
+ if(on('archive')&&on('press')){const un=S.gigs.filter(g=>g.date>=TODAY&&g.kind==='Gig'&&!S.apps.some(p=>p.gigId===g.id));out+=`<div class="card"><h3>Gigs without a press request</h3>${un.map(g=>`<div class="item between"><div><b>${h(g.title)}</b><div class="muted small">${fd(g.date)} · ${h(g.venue)}</div></div><button class="btn sm" data-act="requestPress" data-id="${g.id}">Request access</button></div>`).join('')||'<p class="muted">Every upcoming gig has a request.</p>'}</div>`}
+ return out+'</div>';
+}
+
+function artistsView(){
+ const q=ui.artq.toLowerCase().trim();
+ const l=S.artists.filter(a=>!q||(a.name+' '+(a.genre||'')+' '+(a.origin||'')).toLowerCase().includes(q));
+ const by={name:(a,b)=>a.name.localeCompare(b.name),tracks:(a,b)=>nTracks(b)-nTracks(a)||a.name.localeCompare(b.name),tours:(a,b)=>upDates(b)-upDates(a)||a.name.localeCompare(b.name),gigs:(a,b)=>seenCount(b)-seenCount(a)||a.name.localeCompare(b.name)};
+ l.sort(by[ui.artSort]||by.name);
+ const opt=(v,t)=>`<option value="${v}" ${ui.artSort===v?'selected':''}>${t}</option>`;
+ return `<div class="pg-art"><div class="sp-head"><div><div class="sp-title">Artists</div><div class="sp-sub">${plural(l.length,'artist')}${l.length!==S.artists.length?' of '+S.artists.length:''}</div></div><div class="row"><button class="btn pri" data-act="newArtist">${IC.plus} Add artist</button></div></div>
+ <div class="sp-filters" style="margin-bottom:26px"><div class="search-wrap">${IC.search}<input class="in" id="artq" data-inp="artq" value="${h(ui.artq)}" placeholder="Search artists…" autocomplete="off"></div>
+ <select class="in" style="max-width:220px" data-chg="artSort">${opt('name','Sort: A–Z')}${on('radio')?opt('tracks','Sort: Most tracks'):''}${on('press')?opt('tours','Sort: Most tour dates'):''}${on('archive')?opt('gigs','Sort: Most gigs seen'):''}</select></div>
+ ${l.length?'':`<div class="card empty-state"><p>${ui.artq?'No artists match “'+h(ui.artq)+'”.':'No artists yet — add one to get started.'}</p></div>`}
+ <div class="artist-grid">${l.map(a=>{const parts=[on('radio')?plural(nTracks(a),'track'):'',on('press')?plural(upDates(a),'upcoming date'):'',on('archive')?`${seenCount(a)} seen live`:''].filter(Boolean);return `<div class="artist-card" data-act="openArtist" data-id="${a.id}"><div class="artist-photo" style="${artBg({artUrl:a.photoUrl,album:a.name})}">${a.photoUrl?'':initials(a.name)}</div><div class="artist-card-name"><span>${h(a.name)}</span>${flags(a,15)}</div><div class="artist-card-count">${h((parts.length?parts.join(' · '):a.genre)||'')}</div></div>`}).join('')}</div></div>`;
+}
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CHEV='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg>';
+const tourReq=t=>{const g=tourGig(t);if(!g)return null;const r=S.apps.filter(p=>p.gigId===g.id);const rank=['Completed','Approved','Requested','Declined','Draft'];return r.sort((a,b)=>rank.indexOf(a.status)-rank.indexOf(b.status))[0]||null};
+const tourSt=t=>{const r=tourReq(t);return r?r.status:''};
+const dstr=(y,m,d)=>y+'-'+pad(m+1)+'-'+pad(d);
+function calendarView(){
+ const {y,m}=ui.cal,first=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate();
+ const cells=[];for(let i=0;i<first;i++){const d=new Date(y,m,1-first+i);cells.push({k:dstr(d.getFullYear(),d.getMonth(),d.getDate()),n:d.getDate(),out:1})}
+ for(let d=1;d<=dim;d++)cells.push({k:dstr(y,m,d),n:d});
+ while(cells.length%7){const d=new Date(y,m+1,cells.length-first-dim+1);cells.push({k:dstr(d.getFullYear(),d.getMonth(),d.getDate()),n:d.getDate(),out:1})}
+ const ev={};S.tours.forEach(t=>(ev[t.date]=ev[t.date]||[]).push(t));
+ const cls=st=>st?(PRS[st][1]?' ev-'+PRS[st][1]:''):'';
+ let list=S.tours.filter(t=>(ui.calPast||t.date>=TODAY)&&(!ui.calSt||(ui.calSt==='none'?!tourSt(t):tourSt(t)===ui.calSt))).sort(byDate);
+ const groups={};list.forEach(t=>(groups[t.date.slice(0,7)]=groups[t.date.slice(0,7)]||[]).push(t));
+ const keys=Object.keys(groups).sort();
+ const opts=cur=>[['','No request'],...Object.entries(PRS).map(([k,v])=>[k,v[0]])].map(([k,l])=>`<option value="${k}" ${k===cur?'selected':''}>${l}</option>`).join('');
+ let o=`<div class="row between wrap" style="margin-bottom:16px;gap:12px"><div><div class="sp-title">Tour dates</div><div class="sp-sub">${MONTHS[m]} ${y}</div></div>
+ <div class="cal-nav"><div class="icon-btn" data-act="calMove" data-d="-1" title="Previous month">${CHEV.replace('9 6 15 12 9 18','15 6 9 12 15 18')}</div><button class="btn sm" data-act="calToday">Today</button><div class="icon-btn" data-act="calMove" data-d="1" title="Next month">${CHEV}</div><button class="btn pri" data-act="newTour" style="margin-left:8px">+ Add tour date</button><button class="btn" data-act="findTours">Find new tour dates</button></div></div>
+ <div class="cal-grid" style="margin-bottom:6px">${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d=>`<div class="cal-dow">${d}</div>`).join('')}</div>
+ <div class="cal-grid">${cells.map(c=>`<div class="cal-cell ${c.out?'cal-out':''} ${c.k===TODAY?'cal-today':''}"><div class="cal-daynum">${c.n}</div>${(ev[c.k]||[]).map(t=>`<div class="cal-event${cls(tourSt(t))}" data-act="openArtist" data-id="${t.artistId}" title="${h(aname(t.artistId)+(t.venue?' — '+t.venue:''))}">${h(aname(t.artistId))}</div>`).join('')}</div>`).join('')}</div>
+ <div class="row between wrap" style="margin:34px 0 14px;gap:12px"><div><div style="font-size:16px;font-weight:700;color:var(--navy)">All tour dates</div><div class="muted small">${plural(list.length,'date')}</div></div>
+ <div class="row wrap" style="gap:14px"><select data-chg="calSt" style="padding:7px 10px;border:1px solid var(--line);border-radius:8px;max-width:200px"><option value="">All statuses</option><option value="none" ${ui.calSt==='none'?'selected':''}>No request</option>${Object.entries(PRS).map(([k,v])=>`<option value="${k}" ${ui.calSt===k?'selected':''}>${v[0]}</option>`).join('')}</select>
+ <label class="row small" style="gap:8px;cursor:pointer"><input type="checkbox" data-chg="calPast" ${ui.calPast?'checked':''}> Include past dates</label></div></div>`;
+ if(!keys.length)o+='<div class="card empty-state"><p>No tour dates match.</p></div>';
+ keys.forEach(k=>{const open=ui.calOpen[k]??(k===TODAY.slice(0,7)||k===dstr(y,m,1).slice(0,7)||keys[0]===k);const [yy,mm]=k.split('-').map(Number);
+  o+=`<div class="month-group"><div class="month-header" data-act="calToggle" data-k="${k}"><div class="row" style="gap:10px"><div class="month-chevron ${open?'open':''}">${CHEV}</div><div class="month-title">${MONTHS[mm-1]} ${yy}</div></div><span class="pill">${plural(groups[k].length,'date')}</span></div>`;
+  if(open)o+=`<div class="month-body">${groups[k].map(t=>{const a=artist(t.artistId),st=tourSt(t);return `<div class="track-row"><div class="art" data-act="openArtist" data-id="${t.artistId}" style="width:44px;height:44px;border-radius:50%;cursor:pointer;${artBg({artUrl:a&&a.photoUrl,album:aname(t.artistId)})}">${a&&a.photoUrl?'':initials(aname(t.artistId))}</div><div class="track-main"><div class="track-title"><span class="link" data-act="openArtist" data-id="${t.artistId}">${h(aname(t.artistId))}</span></div><div class="track-meta">${h(t.venue||'Venue TBA')}${t.city?' — '+h(t.city):''}</div></div><div class="track-col">${fd(t.date)}</div><select data-chg="tourStatus" data-id="${t.id}" title="Press request status" style="width:auto;max-width:130px;padding:6px 10px;font-size:12.5px;flex:none;border:1px solid var(--line);border-radius:8px">${opts(st)}</select><div class="track-actions">${t.ticketUrl?`<a class="pill purple" href="${h(t.ticketUrl)}" target="_blank" rel="noopener">Tickets</a>`:''}<div class="icon-btn" data-act="editTour" data-id="${t.id}" title="Edit">${IC.edit}</div><div class="icon-btn" data-act="delTour" data-id="${t.id}" title="Remove">${IC.trash}</div></div></div>`}).join('')}</div>`;
+  o+='</div>'});
+ return o;
+}
+function pressView(){
+ let out='';
+ const t=S.tab.press;
+ if(t==='apps'){
+  const st=['Draft','Requested','Approved','Declined','Completed'];
+  out+=`<div class="row between" style="margin-bottom:12px"><div class="muted small">Move a request between columns with the status menu. Overdue follow-ups are flagged.</div><button class="btn pri" data-act="newApp">+ New request</button></div><div class="board">`;
+  st.forEach(s=>{const l=S.apps.filter(p=>p.status===s);out+=`<div class="col"><h4><span>${s.toUpperCase()}</span><span class="muted">${l.length}</span></h4>${l.map(p=>{const g=gig(p.gigId),od=p.followUp&&p.followUp<=TODAY&&['Draft','Requested'].includes(p.status);return `<div class="pc"><div class="row between"><span class="pill blue">${p.type}</span>${od?'<span class="pill bad">Follow-up overdue</span>':''}</div>
+  <div><b>${p.artistId?`<span class="link" data-act="openArtist" data-id="${p.artistId}">${h(aname(p.artistId))}</span>`:h(g?g.title:'—')}</b></div>
+  ${g?`<div class="small muted">${h(g.venue)}, ${h(g.city)} · ${fd(g.date)}</div>`:''}
+  <div class="small">${p.contactId?'👤 '+h(contact(p.contactId).name):'<span class="muted">No contact</span>'}</div>
+  <div class="small muted">Deadline ${fd(p.deadline)}${p.followUp?` · Chase ${fd(p.followUp)}`:''}</div>
+  ${p.link?`<div class="small"><a href="${h(p.link)}" target="_blank" rel="noopener">Published piece ↗</a></div>`:''}
+  <div class="row"><select data-chg="appStatus" data-id="${p.id}" style="flex:1;padding:4px;border:1px solid var(--line);border-radius:6px">${st.map(x=>`<option ${x===p.status?'selected':''}>${x}</option>`).join('')}</select><button class="btn sm" data-act="editApp" data-id="${p.id}">Edit</button><button class="btn sm del" data-act="delApp" data-id="${p.id}">✕</button></div></div>`}).join('')}</div>`});
+  out+='</div>';
+ }
+ if(t==='tours'){
+  out+=`<div class="row between wrap" style="margin-bottom:12px"><div class="muted small">Upcoming tour dates for bands you follow.</div><div class="row"><button class="btn" data-act="findTours">Find dates (Bandsintown / Songkick)</button><button class="btn pri" data-act="newTour">+ Add tour date</button></div></div>
+  <div class="card tw"><table><tr><th>DATE</th><th>ARTIST</th><th>TOUR</th><th>VENUE</th><th>CITY</th><th>TICKETS</th><th></th></tr>${S.tours.slice().sort(byDate).map(x=>{const inArc=S.gigs.some(g=>g.artistId===x.artistId&&g.date===x.date);return `<tr><td>${fd(x.date)}</td><td class="link" data-act="openArtist" data-id="${x.artistId}">${h(aname(x.artistId))}</td><td>${h(x.tour)}</td><td>${h(x.venue)}</td><td>${h(x.city)}</td><td><span class="pill ${x.status==='Sold out'?'bad':'ok'}">${x.status}</span>${x.ticketUrl?` <a class="pill purple" href="${h(x.ticketUrl)}" target="_blank" rel="noopener">Tickets ↗</a>`:''}</td><td style="white-space:nowrap">${on('archive')?(inArc?'<span class="pill red">In archive</span>':`<button class="btn sm" data-act="tourToArchive" data-id="${x.id}">+ Archive</button>`):''} <button class="btn sm" data-act="editTour" data-id="${x.id}">Edit</button> <button class="btn sm del" data-act="delTour" data-id="${x.id}">✕</button></td></tr>`}).join('')}</table></div>`;
+ }
+ if(t==='calendar'){out+=calendarView()}
+ if(t==='contacts'){out+=agenciesView()}
+ return out;
+}
+
+function archiveView(){
+ const f=S.tab.archive;let l=S.gigs.slice();
+ if(f==='upcoming')l=l.filter(g=>g.date>=TODAY);if(f==='attended')l=l.filter(g=>g.date<TODAY);if(f==='festival')l=l.filter(g=>g.kind==='Festival');
+ l.sort((a,b)=>f==='upcoming'?byDate(a,b):byDate(b,a));
+ const past=S.gigs.filter(g=>g.date<TODAY),rated=past.filter(g=>g.rating);
+ const avg=rated.length?(rated.reduce((n,g)=>n+g.rating,0)/rated.length).toFixed(1):'—';
+ const spend=past.reduce((n,g)=>n+(+g.cost||0),0);
+ const vc={};past.forEach(g=>vc[g.venue]=(vc[g.venue]||0)+1);const top=Object.entries(vc).sort((a,b)=>b[1]-a[1])[0];
+ return `<div class="grid g3" style="margin-bottom:16px"><div class="card"><div class="muted small">Attended (all time)</div><div class="stat">${past.length}</div></div><div class="card"><div class="muted small">Average rating</div><div class="stat">${avg}<span class="muted small"> / 5</span></div></div><div class="card"><div class="muted small">Ticket spend</div><div class="stat">£${spend}</div><div class="muted small">Most visited: ${top?h(top[0]):'—'}</div></div></div>
+ <div class="row between wrap" style="margin-bottom:12px"><div class="muted small">${l.length} ${l.length===1?'entry':'entries'}</div><button class="btn pri" data-act="newGig">+ Add gig / festival</button></div>
+ <div class="card">${l.map(g=>{const up=g.date>=TODAY;const hasApp=S.apps.some(p=>p.gigId===g.id);return `<div class="item"><div class="date"><b>${dayNum(g.date)}</b><span>${mon(g.date)} ${D(g.date).getFullYear()}</span></div><div style="flex:1;min-width:0"><div class="row wrap"><span class="link" data-act="openGig" data-id="${g.id}">${h(g.title)}</span>${g.kind==='Festival'?'<span class="pill purple">Festival</span>':''}${up?'<span class="pill ok">Upcoming</span>':''}${hasApp&&on('press')?'<span class="pill blue">Press request</span>':''}</div><div class="muted small">${h(g.venue)}, ${h(g.city)}${g.support.length?' · Support: '+h(g.support.join(', ')):''}${g.lineup.length?' · '+h(g.lineup.join(', ')):''}</div></div><div>${up?'':stars(g.rating)}</div>${up&&on('press')&&!hasApp&&g.kind!=='x'?`<button class="btn sm" data-act="requestPress" data-id="${g.id}">Request press access</button>`:''}</div>`}).join('')||'<p class="muted">Nothing here yet.</p>'}</div>`;
+}
+
+const IC={
+ disc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>',
+ plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+ search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+ x:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+ play:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="6 3 20 12 6 21 6 3"/></svg>',
+ heart:f=>`<svg viewBox="0 0 24 24" fill="${f?'currentColor':'none'}" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>`,
+ edit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>',
+ trash:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>',
+ add:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h12M3 12h12M3 18h8"/><line x1="19" y1="14" x2="19" y2="22"/><line x1="15" y1="18" x2="23" y2="18"/></svg>'
+};
+const thSet=()=>[...new Set(S.songs.flatMap(s=>s.themes||[]))].sort((a,b)=>a.localeCompare(b));
+function artBg(s){
+ if(s.artUrl)return `background-image:url('${String(s.artUrl).replace(/'/g,'%27')}')`;
+ let n=0;for(const c of (s.album||s.title))n=(n*31+c.charCodeAt(0))%997;
+ const P=[['#6a0b97','#0b47b3'],['#0b47b3','#050f2a'],['#076b55','#050f2a'],['#d00000','#6a0b97'],['#050f2a','#6a0b97'],['#076b55','#0b47b3'],['#d00000','#050f2a']][n%7];
+ return `background:linear-gradient(135deg,${P[0]},${P[1]})`;
+}
+function songList(){
+ const q=ui.songq.toLowerCase().trim();
+ return S.songs.filter(s=>(!q||(s.title+' '+aname(s.artistId)+' '+(s.album||'')+' '+(s.genre||'')).toLowerCase().includes(q))&&ui.themeF.every(t=>(s.themes||[]).includes(t))&&(!ui.ndOnly||s.nd))
+  .sort((a,b)=>aname(a.artistId).localeCompare(aname(b.artistId))||a.title.localeCompare(b.title));
+}
+function songRow(s,sh){
+ const a=artist(s.artistId),pc=playCount(s.id);
+ return `<div class="track-row ${s.ndOnly?'nd-only':''}" ${s.ndOnly?'title="In Navidrome but not yet added to Reverb — edit it to add it properly"':''}>
+ <div class="art" style="${artBg(s)}">${s.artUrl?'':IC.disc}</div>
+ <div class="track-main"><div class="track-title">${h(s.title)}</div><div class="track-meta"><a class="link" data-act="openArtist" data-id="${s.artistId}">${h(a?.name)}</a>${a&&on('archive')&&seen(a)?'<span class="pill red">Seen live</span>':''}${s.album?`<span>· ${h(s.album)}</span>`:''}${s.genre?`<span>· ${h(s.genre)}</span>`:''}${pc?`<span>· played ${pc}×</span>`:''}</div></div>
+ <div class="theme-pills">${(s.themes||[]).map(t=>`<span class="pill pill-theme">${h(t)}</span>`).join('')}</div>
+ <div class="track-col rel">${s.released?fd(s.released):'—'}</div><div class="track-col len">${s.len?mmss(s.len):'—'}</div>
+ <div class="track-actions">${(s.nd||S.keys.navidrome)?`<div class="icon-btn nd" data-act="playNd" data-id="${s.id}" title="Play in Navidrome">${IC.play}</div>`:'<span class="icon-btn spacer"></span>'}
+ ${sh?`<div class="icon-btn" data-act="addSong" data-id="${s.id}" title="Add to “${h(sh.name)}” (${fd(sh.date)})">${IC.add}</div>`:''}
+ <div class="icon-btn ${s.fav?'active':''}" data-act="favSong" data-id="${s.id}" title="Favourite">${IC.heart(s.fav)}</div>
+ <div class="icon-btn" data-act="editSong" data-id="${s.id}" title="Edit">${IC.edit}</div>
+ <div class="icon-btn" data-act="delSong" data-id="${s.id}" title="Delete">${IC.trash}</div></div></div>`;
+}
+function sfHTML(f){
+ const prev=artBg({artUrl:f.artUrl,album:f.album,title:f.title||'x'});
+ return `<div style="padding:16px 20px;display:grid;gap:14px">
+ <label class="fld"><span>Track title</span><input id="sf-title" value="${h(f.title)}" placeholder="Track title"></label>
+ <label class="fld"><span>Artist</span><input id="sf-artist" list="sf-artists" value="${h(f.artist)}" placeholder="Artist name — new names are added automatically"></label>
+ <datalist id="sf-artists">${S.artists.map(a=>`<option value="${h(a.name)}"></option>`).join('')}</datalist>
+ <label class="fld"><span>Album (optional)</span><input id="sf-album" value="${h(f.album)}" placeholder="Album name"></label>
+ <div style="display:grid;grid-template-columns:1.3fr 1fr 1fr .7fr;gap:12px"><label class="fld"><span>Release date</span><input id="sf-rel" type="date" value="${h(f.released)}"></label><label class="fld"><span>Length (m:ss)</span><input id="sf-len" value="${h(f.len)}" placeholder="3:30"></label><label class="fld"><span>Genre</span><input id="sf-genre" value="${h(f.genre)}"></label><label class="fld"><span>Track no.</span><input id="sf-no" type="number" min="1" value="${h(f.trackNo)}"></label></div>
+ <div class="fld"><span>Album art</span><div class="row"><div class="art" style="${prev};width:44px;height:44px">${f.artUrl?'':IC.disc}</div><input id="sf-art" value="${h(String(f.artUrl).startsWith('data:')?'':f.artUrl)}" placeholder="${String(f.artUrl).startsWith('data:')?'Uploaded image':'Image URL, or upload →'}" style="flex:1;padding:8px 10px;border:1px solid var(--line);border-radius:8px"><input type="file" id="sf-file" accept="image/*" data-chg="sfUpload" style="display:none"><button type="button" class="btn sm" data-act="sfPick">Upload</button></div></div>
+ <div class="fld"><span>Themes (what the song is about)</span><div class="chip-input-row">${f.themes.map(t=>`<span class="pill pill-theme pill-removable" data-act="sfRmTheme" data-t="${h(t)}" title="Remove theme">${h(t)}${IC.x}</span>`).join('')}<input id="sf-theme" list="sf-themes" placeholder="Add a theme, press Enter…" autocomplete="off"></div></div>
+ <datalist id="sf-themes">${thSet().map(t=>`<option value="${h(t)}"></option>`).join('')}</datalist>
+ <label class="fld"><span>Navidrome link (optional)</span><input id="sf-nd" value="${h(f.nd)}" placeholder="Paste the track's Navidrome URL"></label></div>`;
+}
+function sfSync(){
+ const g=i=>document.getElementById(i),f=ui.sf;if(!f||!g('sf-title'))return;
+ f.title=g('sf-title').value;f.artist=g('sf-artist').value;f.album=g('sf-album').value;f.released=g('sf-rel').value;f.len=g('sf-len').value;f.genre=g('sf-genre').value;f.trackNo=g('sf-no').value;f.nd=g('sf-nd').value;
+ const a=g('sf-art').value.trim();if(a||!String(f.artUrl).startsWith('data:'))f.artUrl=a;
+}
+function sfOpen(title,f){ui.sf=f;modal={title,html:sfHTML(f),fields:[],save:sfSave,saveLabel:'Save',extra:'',wide:false};render()}
+function sfRefresh(){modal.html=sfHTML(ui.sf);render()}
+function sfAddTheme(){
+ const el=document.getElementById('sf-theme');const raw=(el?el.value:'').replace(/\s+/g,' ').trim();if(!raw)return false;
+ if(!ui.sf.themes.some(t=>t.toLowerCase()===raw.toLowerCase()))ui.sf.themes.push(raw);
+ if(el)el.value='';return true;
+}
+function sfSave(){
+ sfSync();sfAddTheme();const f=ui.sf;
+ if(!f.title.trim()||!f.artist.trim()){toast('Track title and artist are required');return false}
+ let a=S.artists.find(x=>x.name.toLowerCase()===f.artist.trim().toLowerCase());
+ if(!a){a={id:uid('a'),name:f.artist.trim(),genre:f.genre.trim(),origin:'',mbid:'',notes:''};S.artists.push(a)}
+ const rec={title:f.title.trim(),artistId:a.id,album:f.album.trim(),released:f.released,year:f.released?+f.released.slice(0,4):'',len:plen(f.len||'0:00'),genre:f.genre.trim(),trackNo:+f.trackNo||'',artUrl:f.artUrl,nd:f.nd.trim(),themes:f.themes.slice(),ndOnly:false};
+ if(f.id)Object.assign(S.songs.find(s=>s.id===f.id),rec);else S.songs.push({id:uid('s'),fav:false,...rec});
+ toast('Saved.');
+}
+IC.mega='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>';
+IC.cal='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>';
+IC.mail='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z"/><path d="m4 6 8 7 8-7"/></svg>';
+IC.tick=s=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" style="width:${s}px;height:${s}px"><path d="M20 6 9 17l-5-5"/></svg>`;
+IC.warn=s=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="${s}" height="${s}" style="width:${s}px;height:${s}px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+const initials=n=>String(n).split(/\s+/).filter(w=>/^[A-Za-z0-9]/.test(w)).slice(0,2).map(w=>w[0].toUpperCase()).join('')||'?';
+const plural=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+const nTracks=a=>S.songs.filter(s=>s.artistId===a.id).length;
+const upDates=a=>S.tours.filter(t=>t.artistId===a.id&&t.date>=TODAY).length;
+const seenCount=a=>S.gigs.filter(g=>g.date<TODAY&&(g.artistId===a.id||g.lineup.includes(a.name))).length;
+const agencyList=()=>[...new Set(S.contacts.map(c=>c.agency).filter(Boolean))].sort();
+const flags=(a,s)=>`${a.isAi?`<span title="AI artist" style="display:inline-flex;color:#e0a721;flex:none">${IC.warn(s)}</span>`:''}${a.complete?`<span title="Artist profile complete" style="display:inline-flex;color:#22c55e;flex:none">${IC.tick(s)}</span>`:''}`;
+const PRS={Draft:['Draft',''],Requested:['Applied','warn'],Approved:['Approved','ok'],Declined:['Denied','bad'],Completed:['Completed','blue']};
+const pressPill=r=>{if(!r)return '<span class="pill">No request</span>';const x=PRS[r.status]||[r.status,''];return `<span class="pill ${x[1]}" title="Press request: ${h(r.type)}">${x[0]}</span>`};
+function resizeImg(file,size,cb){const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d'),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,size,size);cb(c.toDataURL('image/jpeg',.82))};im.src=rd.result};rd.readAsDataURL(file)}
+function albumsOf(a){
+ const ss=S.songs.filter(s=>s.artistId===a.id),m={};
+ ss.filter(s=>s.album).forEach(s=>(m[s.album]=m[s.album]||[]).push(s));
+ const albums=Object.entries(m).map(([name,tracks])=>({name,tracks:tracks.sort((x,y)=>(x.trackNo||999)-(y.trackNo||999)||x.title.localeCompare(y.title)),artUrl:(tracks.find(t=>t.artUrl)||{}).artUrl||'',released:tracks.map(t=>t.released).filter(Boolean).sort()[0]||''})).sort((x,y)=>(y.released||'').localeCompare(x.released||''));
+ return {albums,singles:ss.filter(s=>!s.album).sort((x,y)=>x.title.localeCompare(y.title)),total:ss.length};
+}
+function artSec(title,icon,color,btn,body,count){return `<div class="ap-section"><div class="ap-head"><div class="ap-title" style="color:${color}">${icon}<span style="color:var(--navy)">${title}</span>${count!==undefined?`<span class="ap-count">${count}</span>`:''}</div>${btn||''}</div>${body}</div>`}
+const tkRow=(ico,title,meta,mid,actions)=>`<div class="track-row"><div class="art tk-ico">${ico}</div><div class="track-main"><div class="track-title">${title}</div><div class="track-meta">${meta}</div></div>${mid}<div class="track-actions">${actions}</div></div>`;
+function artistPage(){
+ const a=artist(S.artistId);
+ const back=`<div style="margin-bottom:16px"><button class="btn sm" data-act="nav" data-v="artists">← Artists</button></div>`;
+ if(!a)return `<div class="pg-art">${back}<div class="card empty-state"><p>Artist not found.</p></div></div>`;
+ const yrs=a.yearFormed&&a.yearSplit?`${a.yearFormed}–${a.yearSplit}`:a.yearFormed?`Formed ${a.yearFormed}`:a.yearSplit?`Split ${a.yearSplit}`:'';
+ const meta=[a.genre,a.origin,yrs].filter(Boolean).join(' · ');
+ let o=`<div class="pg-art">${back}<div class="hero-panel"><div class="artist-photo" style="${artBg({artUrl:a.photoUrl,album:a.name})}">${a.photoUrl?'':initials(a.name)}</div><div style="flex:1;min-width:220px"><div class="sp-title" style="display:flex;align-items:center;gap:9px;flex-wrap:wrap"><span>${h(a.name)}</span>${flags(a,20)}</div>${meta?`<div class="sp-sub">${h(meta)}</div>`:''}<div class="row wrap" style="margin-top:8px">${on('archive')&&seenCount(a)?`<span class="pill red">Seen live ×${seenCount(a)}</span>`:''}${a.mbid?`<span class="pill">MusicBrainz ${h(a.mbid)}</span>`:''}</div><p class="sp-sub" style="max-width:560px;margin-top:8px">${h(a.bio||'No bio yet.')}</p></div><button class="btn" data-act="editArtist" data-id="${a.id}">Edit artist</button></div>`;
+ if(on('press')){
+  const pcs=S.contacts.filter(c=>c.artists.includes(a.id));
+  o+=artSec('PR contact',IC.mega,'var(--blue)',`<button class="btn sm" data-act="newPrFor" data-id="${a.id}">Add PR contact</button>`,pcs.length?pcs.map(c=>tkRow(IC.mega,`<span class="link" data-act="openAgency" data-id="${c.agencyId}">${h(c.agency||c.name)}</span>`,h([c.name,c.email].filter(Boolean).join(' · ')||'No named contact'),`<div class="track-col">${h(c.phone||'')}</div>`,`${c.email?`<a class="icon-btn" href="mailto:${h(c.email)}" title="Email">${IC.mail}</a>`:''}<div class="icon-btn" data-act="editPr" data-id="${c.id}" title="Edit">${IC.edit}</div><div class="icon-btn" data-act="unlinkPr" data-id="${c.id}" data-a="${a.id}" title="Remove from this artist">${IC.x}</div>`)).join(''):'<div class="ap-empty">No PR contact on file.</div>');
+  const ts=S.tours.filter(t=>t.artistId===a.id&&t.date>=TODAY).sort(byDate);
+  o+=artSec('Upcoming tour dates',IC.cal,'var(--blue)',`<button class="btn sm" data-act="newTourFor" data-id="${a.id}">Add date</button>`,ts.length?ts.map(t=>{const g=tourGig(t),r=g?S.apps.find(p=>p.gigId===g.id):null,att=!!g;
+   return tkRow(IC.cal,`${h(t.venue||'Venue TBA')}${t.city?' — '+h(t.city):''}`,`${fd(t.date)}${t.tour?' · '+h(t.tour):''}`,`<span class="pill ${t.status==='Sold out'?'bad':'ok'}">${t.status}</span>${pressPill(r)}${on('archive')?`<div class="track-col">${att?"You're going":'Not going'}</div>`:''}`,
+   `${on('archive')?`<div class="icon-btn ${att?'active':''}" data-act="toggleAttend" data-id="${t.id}" title="${att?"You're going — click to cancel":"I'm attending"}">${IC.tick(15)}</div>`:''}${t.ticketUrl?`<a class="pill purple" href="${h(t.ticketUrl)}" target="_blank" rel="noopener">Tickets</a>`:''}${on('archive')&&!r?`<div class="icon-btn" data-act="tourRequest" data-id="${t.id}" title="Request press access">${IC.mega}</div>`:''}<div class="icon-btn" data-act="editTour" data-id="${t.id}" title="Edit">${IC.edit}</div><div class="icon-btn" data-act="delTour" data-id="${t.id}" title="Remove">${IC.x}</div>`)}).join(''):'<div class="ap-empty">No upcoming tour dates.</div>');
+ }
+ if(on('archive')){
+  const gs=S.gigs.filter(g=>g.artistId===a.id||g.lineup.includes(a.name)).sort((x,y)=>byDate(y,x));
+  o+=artSec('Gigs & festivals','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>','var(--red)','',gs.length?gs.map(g=>`<div class="track-row"><div class="date"><b>${dayNum(g.date)}</b><span>${mon(g.date)} ${D(g.date).getFullYear()}</span></div><div class="track-main"><div class="track-title"><span class="link" data-act="openGig" data-id="${g.id}">${h(g.title)}</span></div><div class="track-meta">${h(g.venue)}, ${h(g.city)}${g.kind==='Festival'?' · Festival':''}</div></div>${g.date>=TODAY?'<span class="pill ok">Upcoming</span>':stars(g.rating)}</div>`).join(''):'<div class="ap-empty">Not in your archive yet.</div>',gs.length?plural(gs.length,'entry').replace('entrys','entries'):undefined);
+ }
+ if(on('press')){
+  const ap=S.apps.filter(p=>p.artistId===a.id);
+  o+=artSec('Press requests',IC.mega,'var(--blue)','',ap.length?ap.map(p=>{const g=gig(p.gigId);return tkRow(IC.mega,h(p.type),h(g?gigLabel(g):'No linked gig'),`${pressPill(p)}<div class="track-col">${p.deadline?'Due '+fd(p.deadline):''}</div>`,`<div class="icon-btn" data-act="editApp" data-id="${p.id}" title="Edit">${IC.edit}</div>`)}).join(''):'<div class="ap-empty">No press requests for this artist.</div>');
+ }
+ if(on('radio')){
+  const {albums,singles,total}=albumsOf(a),sh=currentShow();
+  const acts=s=>`${(s.nd||S.keys.navidrome)?`<div class="icon-btn nd" data-act="playNd" data-id="${s.id}" title="Play in Navidrome">${IC.play}</div>`:''}${sh?`<div class="icon-btn" data-act="addSong" data-id="${s.id}" title="Add to “${h(sh.name)}”">${IC.add}</div>`:''}<div class="icon-btn" data-act="editSong" data-id="${s.id}" title="Edit">${IC.edit}</div><div class="icon-btn" data-act="delSong" data-id="${s.id}" title="Delete">${IC.trash}</div>`;
+  const pills=s=>`<div class="theme-pills">${(s.themes||[]).map(t=>`<span class="pill pill-theme">${h(t)}</span>`).join('')}</div>`;
+  let b='';
+  if(!total)b='<div class="ap-empty">No tracks yet for this artist.</div>';
+  albums.forEach(al=>{b+=`<div class="album-block"><div class="art album-art" style="${artBg({artUrl:al.artUrl,album:al.name})}">${al.artUrl?'':IC.disc}</div><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:15px;margin-bottom:10px;display:flex;align-items:baseline;gap:8px"><span>${h(al.name)}</span><span class="ap-count">${al.released?fd(al.released):''}</span></div>${al.tracks.map(s=>`<div class="track-row ${s.ndOnly?'nd-only':''}"><div class="track-no">${s.trackNo||''}</div><div class="track-main"><div class="track-title">${h(s.title)}</div></div>${pills(s)}<div class="track-col rel">${s.released?fd(s.released):'—'}</div><div class="track-col len">${s.len?mmss(s.len):'—'}</div><div class="track-actions">${acts(s)}</div></div>`).join('')}</div></div>`});
+  if(singles.length)b+=`<div style="font-weight:700;font-size:15px;margin:8px 0 10px;display:flex;align-items:baseline;gap:8px"><span>Singles</span><span class="ap-count">${plural(singles.length,'track')}</span></div>`+singles.map(s=>`<div class="track-row ${s.ndOnly?'nd-only':''}"><div class="art art-single" style="${artBg(s)}">${s.artUrl?'':IC.disc}</div><div class="track-main"><div class="track-title">${h(s.title)}</div></div>${pills(s)}<div class="track-col rel">${s.released?fd(s.released):'—'}</div><div class="track-col len">${s.len?mmss(s.len):'—'}</div><div class="track-actions">${acts(s)}</div></div>`).join('');
+  o+=artSec('Albums','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>','var(--green)',`<button class="btn sm" data-act="newSongFor" data-id="${a.id}">Add track</button>`,b,plural(total,'track'));
+ }
+ return o+'</div>';
+}
+IC.person='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>';
+IC.people='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+const agencyById=id=>S.agencies.find(a=>a.id===id);
+const agContacts=ag=>S.contacts.filter(c=>c.agencyId===ag.id);
+const agNamed=ag=>agContacts(ag).filter(c=>c.name);
+const agArtists=ag=>[...new Set(agContacts(ag).flatMap(c=>c.artists))];
+function ensureAgency(name){name=String(name||'').trim();let ag=S.agencies.find(a=>a.company.toLowerCase()===name.toLowerCase());if(!ag){ag={id:uid('ag'),company:name,notes:''};S.agencies.push(ag)}return ag}
+function relinkAgency(c){const ag=ensureAgency(c.agency);c.agency=ag.company;c.agencyId=ag.id}
+function addContact(o,aids){
+ const ag=ensureAgency(o.agency),nm=String(o.name||'').trim();
+ let c=nm?S.contacts.find(x=>x.agencyId===ag.id&&x.name.toLowerCase()===nm.toLowerCase()):S.contacts.find(x=>x.agencyId===ag.id&&!x.name);
+ if(c){aids.forEach(id=>{if(!c.artists.includes(id))c.artists.push(id)});return c}
+ c={id:uid('c'),name:nm,agency:ag.company,agencyId:ag.id,role:o.role||'',email:o.email||'',phone:o.phone||'',notes:o.notes||'',artists:aids.slice(),last:o.last||'',linkNotes:{}};
+ S.contacts.push(c);return c;
+}
+function unlinkArtist(c,aid){c.artists=c.artists.filter(x=>x!==aid);if(c.linkNotes)delete c.linkNotes[aid];if(!c.name&&!c.artists.length)S.contacts=S.contacts.filter(x=>x.id!==c.id)}
+function agenciesView(){
+ const q=ui.agq.toLowerCase().trim();
+ const l=S.agencies.filter(g=>!q||g.company.toLowerCase().includes(q)).sort((a,b)=>a.company.localeCompare(b.company));
+ return `<div class="pg-art pg-press"><div class="sp-head"><div><div class="sp-title">PR agents</div><div class="sp-sub">${l.length} agenc${l.length===1?'y':'ies'}${l.length!==S.agencies.length?' of '+S.agencies.length:''}</div></div><div class="row"><button class="btn pri" data-act="newAgency">${IC.plus} Add PR agency</button></div></div>
+ <div class="sp-filters" style="margin-bottom:26px"><div class="search-wrap">${IC.search}<input class="in" id="agq" data-inp="agq" value="${h(ui.agq)}" placeholder="Search agencies…" autocomplete="off"></div></div>
+ ${S.agencies.length?(l.length?'':`<div class="card empty-state"><p>No agencies match “${h(ui.agq)}”.</p></div>`):'<div class="card empty-state"><p>No PR agencies yet — add one to get started.</p></div>'}
+ <div class="artist-grid">${l.map(g=>`<div class="artist-card" data-act="openAgency" data-id="${g.id}"><div class="artist-photo" style="${artBg({album:g.company})}">${initials(g.company)}</div><div class="artist-card-name"><span>${h(g.company)}</span></div><div class="artist-card-count">${plural(agNamed(g).length,'contact')} · ${plural(agArtists(g).length,'artist')}</div></div>`).join('')}</div></div>`;
+}
+function agencyPage(){
+ const ag=agencyById(S.agencyId);
+ const back=`<div style="margin-bottom:16px"><button class="btn sm" data-act="subnav" data-m="press" data-t="contacts">← PR agents</button></div>`;
+ if(!ag)return `<div class="pg-art pg-press">${back}<div class="card empty-state"><p>PR agency not found.</p></div></div>`;
+ const named=agNamed(ag),links=agContacts(ag).flatMap(c=>c.artists.map(aid=>({c,aid}))).filter(x=>artist(x.aid));
+ let o=`<div class="pg-art pg-press">${back}<div class="hero-panel"><div class="artist-photo" style="${artBg({album:ag.company})}">${initials(ag.company)}</div><div style="flex:1;min-width:220px"><div class="sp-title">${h(ag.company)}</div><p class="sp-sub" style="max-width:560px;margin-top:8px">${h(ag.notes||'No notes yet.')}</p></div><button class="btn" data-act="editAgency" data-id="${ag.id}">Edit agency</button></div>`;
+ o+=artSec('Contacts',IC.people,'var(--blue)',`<button class="btn sm" data-act="newAgContact" data-id="${ag.id}">Add contact</button>`,named.length?named.map(c=>tkRow(IC.person,h(c.name),h([c.role,c.email,c.phone].filter(Boolean).join(' · ')||'No contact details'),'',`${c.email?`<a class="icon-btn" href="mailto:${h(c.email)}" title="Email">${IC.mail}</a>`:''}<div class="icon-btn" data-act="newAppFor" data-id="${c.id}" title="New press request">${IC.mega}</div><div class="icon-btn" data-act="editAgContact" data-id="${c.id}" title="Edit">${IC.edit}</div><div class="icon-btn" data-act="delAgContact" data-id="${c.id}" title="Remove">${IC.x}</div>`)).join(''):'<div class="ap-empty">No contacts yet.</div>');
+ o+=artSec('Artists represented','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>','var(--blue)',`<button class="btn sm" data-act="linkArtist" data-id="${ag.id}">Link artist</button>`,links.length?links.map(({c,aid})=>{const a=artist(aid),note=(c.linkNotes||{})[aid];return `<div class="track-row"><div class="art" data-act="openArtist" data-id="${a.id}" style="width:44px;height:44px;border-radius:50%;cursor:pointer;font-weight:800;font-size:13px;${artBg({artUrl:a.photoUrl,album:a.name})}">${a.photoUrl?'':initials(a.name)}</div><div class="track-main"><div class="track-title"><span class="link" data-act="openArtist" data-id="${a.id}">${h(a.name)}</span></div><div class="track-meta">${c.name?'Contact: '+h(c.name):'No named contact'}${note?' · '+h(note):''}</div></div><div class="track-actions"><div class="icon-btn" data-act="unlinkAg" data-id="${c.id}" data-a="${a.id}" title="Unlink">${IC.x}</div></div></div>`}).join(''):'<div class="ap-empty">No artists linked yet.</div>');
+ return o+'</div>';
+}
+function radioView(){
+ let out='';
+ if(S.tab.radio==='songs'){
+  const all=songList(),shown=all.slice(0,ui.songLimit),sh=currentShow();
+  out+=`<div class="songs-page"><div class="sp-head"><div><div class="sp-title">Song database</div><div class="sp-sub">${all.length} track${all.length===1?'':'s'}${all.length!==S.songs.length?' of '+S.songs.length:''}</div></div><div class="row"><button class="btn pri" data-act="newSong">${IC.plus} Add track</button></div></div>
+  <div class="sp-filters"><div class="search-wrap">${IC.search}<input class="in" id="songq" data-inp="songq" value="${h(ui.songq)}" placeholder="Search by title, artist, album or genre…" autocomplete="off"></div>
+  <div style="flex:1;min-width:240px;max-width:420px"><div class="chip-input-row">${ui.themeF.map(t=>`<span class="pill pill-theme pill-removable" data-act="rmThemeF" data-t="${h(t)}" title="Remove filter">${h(t)}${IC.x}</span>`).join('')}<input id="themeF" data-chg="themeFAdd" list="theme-list" placeholder="Filter by theme…" autocomplete="off"></div></div>
+  <datalist id="theme-list">${thSet().map(t=>`<option value="${h(t)}"></option>`).join('')}</datalist>
+  <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;cursor:pointer;white-space:nowrap"><input type="checkbox" data-chg="ndOnly" ${ui.ndOnly?'checked':''} style="width:16px;height:16px"> Tracks available on Navidrome</label></div>
+  ${shown.length?'':`<div class="card empty-state">${IC.disc}<p>${ui.songq?'No tracks match “'+h(ui.songq)+'”.':'No tracks found — add one to get started.'}</p></div>`}
+  <div>${shown.map(s=>songRow(s,sh)).join('')}</div>
+  ${all.length>shown.length?`<div style="text-align:center;margin-top:18px"><button class="btn" data-act="moreSongs">Load more (${all.length-shown.length} left)</button></div>`:''}</div>`;
+ }else{
+  const sh=currentShow();
+  out+=`<div class="row between wrap" style="margin-bottom:12px"><div class="row wrap"><select data-chg="pickShow" style="padding:8px;border:1px solid var(--line);border-radius:9px">${S.shows.slice().sort(byDate).map(s=>`<option value="${s.id}" ${sh&&s.id===sh.id?'selected':''}>${fd(s.date)} · ${h(s.name)}</option>`).join('')}</select>${sh?`<button class="btn sm" data-act="editShowMeta" data-id="${sh.id}">Edit show</button><button class="btn sm del" data-act="delShow" data-id="${sh.id}">Delete</button>`:''}</div><button class="btn pri" data-act="newShow">+ New show</button></div>`;
+  if(!sh)return out+'<div class="card muted">No shows yet — create one to start building a playlist.</div>';
+  const total=showSecs(sh),target=sh.mins*60,pct=Math.min(100,Math.round(total/target*100)),diff=target-total;
+  let run=0;
+  out+=`<div class="two"><div class="card"><h3>${h(sh.name)} <span class="muted small">${fd(sh.date)} · ${sh.start}–${clock(sh.start,target)}</span></h3>
+  <div class="row between small"><span><b>${mmss(total)}</b> planned of ${sh.mins}:00</span><span class="pill ${diff<0?'bad':diff<300?'ok':'warn'}">${diff<0?'Over by '+mmss(-diff):mmss(diff)+' to fill'}</span></div><div class="bar-bg" style="margin:6px 0 12px"><div class="bar-fg" style="width:${pct}%;background:${diff<0?'var(--bad)':'var(--green)'}"></div></div>
+  ${sh.items.map((it,i)=>{const s=it.type==='song'?song(it.songId):null;const len=s?s.len:it.secs;const st=clock(sh.start,run);run+=len;return `<div class="item" style="padding:7px 0"><span class="muted small" style="width:42px">${st}</span><span style="width:20px">${it.type==='song'?'♪':it.type==='talk'?'🎙':'✦'}</span><div style="flex:1;min-width:0">${s?`<b>${h(s.title)}</b> <span class="muted">— ${h(aname(s.artistId))}</span>`:`<b>${h(it.label)}</b> <span class="pill">${it.type==='talk'?'Talk':'Jingle'}</span>`}</div><span class="muted small">${mmss(len)}</span><button class="btn sm" data-act="mv" data-i="${i}" data-d="-1">↑</button><button class="btn sm" data-act="mv" data-i="${i}" data-d="1">↓</button><button class="btn sm del" data-act="rm" data-i="${i}">✕</button></div>`}).join('')||'<p class="muted">Empty playlist — add songs from the right.</p>'}
+  <div class="row wrap" style="margin-top:12px"><button class="btn sm" data-act="addSeg">+ Talk / jingle</button><span class="grow"></span><button class="btn sm" data-act="runSheet">Run sheet (print / PDF)</button><button class="btn sm" data-act="expCsv">Export CSV</button><button class="btn sm" data-act="expM3u">Export M3U</button></div></div>
+  <div class="card"><h3>Add songs</h3><input id="songq" data-inp="songq" value="${h(ui.songq)}" placeholder="Search…" style="width:100%;padding:8px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px"><div style="max-height:520px;overflow:auto">${S.songs.filter(s=>!ui.songq||(s.title+' '+aname(s.artistId)).toLowerCase().includes(ui.songq.toLowerCase())).map(s=>{const a=artist(s.artistId);const used=sh.items.some(i=>i.songId===s.id);return `<div class="item" style="padding:6px 0"><div style="flex:1;min-width:0"><b>${h(s.title)}</b> <span class="muted small">${h(a.name)} · ${mmss(s.len)}</span> ${on('archive')&&seen(a)?'<span class="pill red">Seen live</span>':''}${used?' <span class="pill">In playlist</span>':''}</div><button class="btn sm" data-act="addSong" data-id="${s.id}">+</button></div>`}).join('')}</div></div></div>`;
+ }
+ return out;
+}
+function currentShow(){return S.shows.find(s=>s.id===ui.showId)||S.shows.filter(s=>s.date>=TODAY).sort(byDate)[0]||S.shows[0]}
+
+function settingsView(){
+ return `<div class="grid g2"><div class="card"><h3>Installed programs</h3><p class="muted small">Add or remove programs at any time. Your data is kept when a program is switched off.</p>${['press','archive','radio'].map(m=>`<div class="item between"><div>${logo(m,20)}</div><button class="btn ${on(m)?'':'pri'}" data-act="toggleMod" data-m="${m}">${on(m)?'Remove':'Add'}</button></div>`).join('')}</div>
+ <div class="card"><h3>Integrations</h3><p class="muted small">Keys are saved with your account on your own server. Setlist.fm and Bandsintown lookups are made by the server.</p><div class="grid"><label class="fld"><span>Setlist.fm API key</span><input data-chg="key" data-k="setlist" value="${h(S.keys.setlist)}" placeholder="x-api-key"></label><label class="fld"><span>Bandsintown app ID (optional)</span><input data-chg="key" data-k="bandsintown" value="${h(S.keys.bandsintown)}" placeholder="app_id"></label><label class="fld"><span>Navidrome address (for play links)</span><input data-chg="key" data-k="navidrome" value="${h(S.keys.navidrome||'')}" placeholder="https://navidrome.local:4533"></label></div></div>
+ <div class="card"><h3>Data</h3><p class="muted small">Import an AccrediHub export (<code>accredihub-export.json</code>): artists, tracks, themes, PR agencies and contacts, and tour dates. Existing Reverb data is kept; anything already imported is skipped, so it is safe to run twice.</p><div class="row wrap"><button class="btn" data-act="backup">Download backup (JSON)</button><button class="btn" data-act="ahPick">Import AccrediHub data…</button><input type="file" id="ahFile" accept=".json,application/json" data-chg="ahFile" style="display:none"><button class="btn del" data-act="resetAll">Erase all my data</button></div></div>
+ <div class="card"><h3>Self-hosting</h3><p class="small">The full app deploys on TrueNAS via Portainer using a stack from the GitHub repository (<code>docker-compose.yml</code>): a FastAPI container and a Postgres container, with data on a TrueNAS dataset. See the README in the repo.</p></div></div>`;
+}
+
+function searchHTML(){
+ const q=ui.q.trim().toLowerCase();if(!q)return '';const r=[];
+ S.artists.filter(a=>a.name.toLowerCase().includes(q)).forEach(a=>r.push(['ARTISTS','artist',a.id,a.name,a.genre]));
+ if(on('archive'))S.gigs.filter(g=>(g.title+g.venue+g.city).toLowerCase().includes(q)).forEach(g=>r.push(['GIGS & FESTIVALS','gig',g.id,g.title,`${g.venue} · ${fd(g.date)}`]));
+ if(on('radio'))S.songs.filter(s=>(s.title+aname(s.artistId)).toLowerCase().includes(q)).forEach(s=>r.push(['SONGS','song',s.id,s.title,aname(s.artistId)]));
+ if(on('press'))S.agencies.filter(g=>g.company.toLowerCase().includes(q)).forEach(g=>r.push(['PR AGENCIES','agency',g.id,g.company,plural(agNamed(g).length,'contact')]));S.contacts.filter(c=>c.name&&(c.name+c.agency).toLowerCase().includes(q)).forEach(c=>r.push(['PR CONTACTS','contact',c.id,c.name,c.agency]));
+ if(!r.length)return '<div class="r muted">No matches</div>';
+ let last='';return r.slice(0,24).map(x=>{const g=x[0]!==last?`<div class="g">${x[0]}</div>`:'';last=x[0];return `${g}<div class="r" data-act="goSearch" data-t="${x[1]}" data-id="${x[2]}"><b>${h(x[3])}</b><span class="muted small">${h(x[4])}</span></div>`}).join('');
+}
+
+/* ===================== shell ===================== */
+const SUBS={press:[['apps','Applications'],['tours','Bands & tours'],['calendar','Calendar'],['contacts','PR agents']],archive:[['all','All'],['upcoming','Upcoming'],['attended','Attended'],['festival','Festivals']],radio:[['songs','Song database'],['shows','Shows & playlists']]};
+const subLabel=(m,t)=>(SUBS[m].find(x=>x[0]===t)||[])[1]||'';
+const TITLES={agency:'Reverb Press',dashboard:'Dashboard',artists:'Artists',artist:'Artists',press:'Reverb Press',archive:'Reverb Archive',radio:'Reverb Radio',settings:'Settings'};
+function login(){return `<div class="auth"><div style="font-size:1px">${logo('reverb',64)}</div><div class="box"><h2 style="margin-bottom:4px">Sign in</h2><p class="muted small" style="margin-top:0">Demo: any password works.</p><div class="grid"><label class="fld"><span>Username</span><input value="demo" id="u"></label><label class="fld"><span>Password</span><input type="password" id="pw" placeholder="••••••••"></label><button class="btn pri" style="background:var(--purple);border-color:var(--purple)" data-act="login">Sign in</button></div></div></div>`}
+function onboarding(){return `<div class="auth"><div>${logo('reverb',56)}</div><div class="box"><h2>Welcome to Reverb</h2><p class="muted" style="margin-top:4px">Choose the programs you'd like to add. You can change this later in Settings.</p>${['press','archive','radio'].map(m=>`<button class="mod ${ui.pick[m]?'on':''}" data-act="pick" data-m="${m}"><span class="chk">${ui.pick[m]?'✓':''}</span><span><span style="display:block">${logo(m,22,true)}</span><span class="muted small" style="display:block;margin-top:4px">${BR[m].desc}</span></span></button>`).join('')}<button class="btn pri" style="width:100%;background:var(--purple);border-color:var(--purple);margin-top:6px" data-act="finish">Continue</button></div></div>`}
+
+function shell(){
+ const v=S.view;const accent={press:'--blue',archive:'--red',radio:'--green'}[v==='agency'?'press':v]||'--purple';
+ const grp=(m,label)=>{const vg=v==='agency'?'press':v;const open=ui.open[m]??(vg===m);return `<button class="nav ${vg===m?'on':''}" data-act="toggleGrp" data-m="${m}" aria-expanded="${open}"><span class="dot" style="background:${BR[m].c}"></span>${label}<span class="chev">${open?'▾':'▸'}</span></button>${open?`<div class="sub" style="--pc:${BR[m].c}">${SUBS[m].map(([t,l])=>`<button class="subnav ${vg===m&&S.tab[m]===t?'on':''}" data-act="subnav" data-m="${m}" data-t="${t}">${l}</button>`).join('')}</div>`:''}`};
+ const nav=(id,label,dot)=>`<button class="nav ${(v==='artist'?'artists':v)===id?'on':''}" data-act="nav" data-v="${id}"><span class="dot" style="background:${dot}"></span>${label}</button>`;
+ let body='';if(v==='dashboard')body=dashboard();if(v==='artists')body=artistsView();if(v==='artist')body=artistPage();if(v==='agency')body=agencyPage();if(v==='press')body=pressView();if(v==='archive')body=archiveView();if(v==='radio')body=radioView();if(v==='settings')body=settingsView();
+ return `<div id="app" style="--acc:var(${accent})"><aside class="side"><div class="brand">${logo('reverb',30)}</div>${nav('dashboard','Dashboard','#6a0b97')}${nav('artists','Artists','#6a0b97')}<div class="sep">PROGRAMS</div>${on('press')?grp('press','Reverb Press'):''}${on('archive')?grp('archive','Reverb Archive'):''}${on('radio')?grp('radio','Reverb Radio'):''}<div class="grow"></div>${nav('settings','Settings','#98a2b3')}<button class="nav" data-act="logout"><span class="dot" style="background:#d0d5dd"></span>Sign out</button></aside>
+ <div class="main"><div class="top"><h2>${TITLES[v]}${SUBS[v]?` <span class="muted" style="font-weight:600">· ${subLabel(v,S.tab[v])}</span>`:v==='agency'?` <span class="muted" style="font-weight:600">· PR agents</span>`:v==='artist'?` <span class="muted" style="font-weight:600">· ${h(aname(S.artistId))}</span>`:''}</h2><div class="search"><input id="q" data-inp="search" value="${h(ui.q)}" placeholder="Search artists, gigs, songs, contacts…" autocomplete="off"><div id="sres" class="${ui.q?'show':''}">${searchHTML()}</div></div></div><div class="page">${body}</div></div></div>`;
+}
+function modalHTML(){
+ if(!modal)return '';
+ return `<div class="ov" data-act="ovclick" style="--acc:var(${({press:'--blue',archive:'--red',radio:'--green'})[S.view==='agency'?'press':S.view]||'--purple'})"><div class="modal ${modal.wide?'wide':''}"><div class="mh noprint"><h3>${h(modal.title)}</h3><button class="btn sm" data-act="closeModal">✕</button></div>${modal.html?modal.html:`<form id="mform" onsubmit="return false"><div class="mb">${modal.body}</div></form>`}<div class="mf noprint">${modal.extra||''}<button class="btn" data-act="closeModal">${modal.save?'Cancel':'Close'}</button>${modal.save?`<button class="btn pri" data-act="saveModal" style="background:var(--acc)">${modal.saveLabel}</button>`:''}</div></div></div>`;
+}
+function scanHTML(){const c=ui.scan;if(!c)return '';const pc=c.total?Math.round(c.n/c.total*100):0;
+ return `<div class="ov" style="--acc:var(--blue)"><div class="modal" style="max-width:420px"><h3 style="margin-top:0">Find new tour dates</h3>${c.done?`<p style="font-size:15px">${c.found?`Found ${plural(c.found,'new tour date')}.`:'No new tour dates found.'}</p><div class="row" style="justify-content:flex-end"><button class="btn pri" data-act="scanClose">Confirm</button></div>`:`<p class="muted small">Searching Bandsintown for new tour dates…</p><div class="prog"><i style="width:${pc}%"></i></div><p class="muted small" style="margin-bottom:0">${c.n} / ${c.total} artists checked</p>`}</div></div>`}
+function render(){
+ const ae=document.activeElement;const id=ae&&ae.id,ss=ae&&ae.selectionStart;const sy=window.scrollY;
+ const root=$('#root');
+ root.innerHTML=(!S.auth?login():!S.setup?onboarding():shell())+scanHTML()+modalHTML();
+ if(!on(S.view)&&['press','archive','radio'].includes(S.view))S.view='dashboard';
+ if(id&&id!=='u'){const e=document.getElementById(id);if(e){e.focus();try{e.setSelectionRange(ss,ss)}catch(x){}}}
+ window.scrollTo(0,sy);
+}
+
+/* ===================== actions ===================== */
+const A={};
+document.addEventListener('click',e=>{const t=e.target.closest('[data-act]');if(!t)return;const f=A[t.dataset.act];if(f)f(t.dataset,t,e)});
+document.addEventListener('change',e=>{const t=e.target.closest('[data-chg]');if(t&&A[t.dataset.chg])A[t.dataset.chg](t.dataset,t,e)});
+document.addEventListener('input',e=>{const t=e.target.closest('[data-inp]');if(t&&A[t.dataset.inp])A[t.dataset.inp](t.dataset,t,e)});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&modal)closeModal();if(e.key==='Enter'&&e.target.id==='pw')A.login();
+ if(e.key==='Enter'&&e.target.id==='sf-theme'){e.preventDefault();sfSync();if(sfAddTheme()){sfRefresh()}}
+ if(e.key==='Enter'&&e.target.id==='themeF'){e.preventDefault();A.themeFAdd({},e.target)}});
+const commit=()=>{save();render()};
+
+A.login=()=>{S.auth=true;commit()};
+A.logout=async()=>{try{await fetch('/api/auth/logout',{method:'POST'})}catch(e){}location.href='/login.html'};
+A.pick=d=>{ui.pick[d.m]=!ui.pick[d.m];render()};
+A.finish=()=>{S.modules={...ui.pick};S.setup=true;S.view='dashboard';commit()};
+A.nav=d=>{S.view=d.v;if(SUBS[d.v])ui.open[d.v]=true;ui.q='';commit()};
+A.toggleGrp=d=>{const m=d.m,open=ui.open[m]??(S.view===m);if(S.view!==m){S.view=m;ui.open[m]=true;ui.q=''}else ui.open[m]=!open;commit()};
+A.subnav=d=>{S.view=d.m;S.tab[d.m]=d.t;ui.open[d.m]=true;ui.q='';commit()};
+A.tab=d=>{S.tab[d.g]=d.v;commit()};
+A.enable=d=>{S.modules[d.m]=true;toast(BR[d.m].label+' added');commit()};
+A.toggleMod=d=>{S.modules[d.m]=!S.modules[d.m];toast(BR[d.m].label+(S.modules[d.m]?' added':' removed (data kept)'));commit()};
+A.closeModal=()=>closeModal();
+A.ovclick=(d,t,e)=>{if(e.target===t)closeModal()};
+A.saveModal=()=>{const f=$('#mform');if(f&&!f.reportValidity())return;const r=modal.save(f?collect(f,modal.fields):{});if(r!==false){save();modal=null;render()}};
+A.search=(d,t)=>{ui.q=t.value;const r=$('#sres');r.innerHTML=searchHTML();r.classList.toggle('show',!!ui.q.trim())};
+A.goSearch=d=>{ui.q='';if(d.t==='artist')return A.openArtist({id:d.id});if(d.t==='gig'){S.view='archive';save();render();return A.openGig({id:d.id})}if(d.t==='song'){S.view='radio';S.tab.radio='songs';ui.songq=song(d.id).title}if(d.t==='agency')return A.openAgency({id:d.id});if(d.t==='contact')return A.openAgency({id:(contact(d.id)||{}).agencyId});commit()};
+A.songq=(d,t)=>{ui.songq=t.value;ui.songLimit=15;render()};
+A.songg=(d,t)=>{ui.songg=t.value;render()};
+A.pickShow=(d,t)=>{ui.showId=t.value;render()};
+A.key=(d,t)=>{S.keys[d.k]=t.value;save();toast('Saved')};
+const ahRows=(t,cols)=>(t&&t.rows||[]).map(r=>Object.fromEntries(cols.map((c,i)=>[c,r[i]])));
+function importAH(j){
+ const n={artists:0,artistsMatched:0,tracks:0,themes:0,agencies:0,contacts:0,links:0,tours:0,skipped:0};
+ const amap={};
+ ahRows(j.artists,j.artists.cols).forEach(r=>{
+  let a=S.artists.find(x=>x.id==='ah'+r.id)||S.artists.find(x=>x.name.toLowerCase()===String(r.name).trim().toLowerCase());
+  if(a){n.artistsMatched++;if(!a.bio&&r.bio)a.bio=r.bio;if(!a.photoUrl&&r.photoUrl)a.photoUrl=r.photoUrl;if(!a.origin&&r.location)a.origin=r.location}
+  else{a={id:'ah'+r.id,name:String(r.name).trim(),genre:'',origin:r.location||'',mbid:'',notes:'',bio:r.bio||'',photoUrl:r.photoUrl||'',yearFormed:r.yearFormed||'',yearSplit:r.yearSplit||'',isAi:!!r.isAi,complete:!!r.complete};S.artists.push(a);n.artists++}
+  amap[r.id]=a.id});
+ const tmap={};(j.themes||[]).forEach(([id,name])=>tmap[id]=String(name).toLowerCase());
+ const tth={};(j.trackThemes||[]).forEach(([t,th])=>{(tth[t]=tth[t]||[]).push(tmap[th])});
+ const have=new Set(S.songs.map(s=>s.id));
+ ahRows(j.tracks,j.tracks.cols).forEach(r=>{
+  const id='ahs'+r.id;if(have.has(id)||!amap[r.artistId]){n.skipped++;return}
+  const th=(tth[r.id]||[]).filter(Boolean);n.themes+=th.length;
+  S.songs.push({id,artistId:amap[r.artistId],title:r.title,album:r.album||'',year:r.released?+r.released.slice(0,4):'',released:r.released||'',len:0,genre:'',themes:th,fav:false,nd:'',ndOnly:!!r.navidromeOnly,artUrl:r.artIdx?(j.art[r.artIdx-1]||''):'',trackNo:r.trackNo||'',discNo:r.discNo||''});n.tracks++});
+ const gmap={};
+ ahRows(j.agencies,j.agencies.cols).forEach(r=>{const had=S.agencies.some(x=>x.company.toLowerCase()===r.company.toLowerCase());gmap[r.id]=ensureAgency(r.company);if(!had)n.agencies++});
+ const cmap={};
+ ahRows(j.contacts,j.contacts.cols).forEach(r=>{const ag=gmap[r.agencyId];if(!ag)return;const had=S.contacts.some(x=>x.agencyId===ag.id&&x.name.toLowerCase()===r.name.toLowerCase());cmap[r.id]=addContact({agency:ag.company,name:r.name,email:r.email,phone:r.phone},[]);if(!had)n.contacts++});
+ ahRows(j.artistAgencies,j.artistAgencies.cols).forEach(r=>{const ag=gmap[r.agencyId],aid=amap[r.artistId];if(!ag||!aid)return;const c=addContact({agency:ag.company},[aid]);n.links++});
+ const PM={applied:'Requested',awaiting:'Requested',approved:'Approved',denied:'Declined'};
+ ahRows(j.tourDates,j.tourDates.cols).forEach(r=>{const aid=amap[r.artistId];if(!aid||S.tours.some(t=>t.artistId===aid&&t.date===r.date&&t.venue===(r.venue||''))){n.skipped++;return}
+  const t={id:'aht'+r.id,artistId:aid,tour:'',date:r.date,venue:r.venue||'',city:r.city||'',status:'On sale',ticketUrl:r.ticketUrl||''};S.tours.push(t);n.tours++;
+  if(PM[r.status]){const g=ensureGig(t);S.apps.push({id:'ahp'+r.id,type:'Photo pass',status:PM[r.status],artistId:aid,gigId:g.id,contactId:'',requested:PM[r.status]==='Requested'?TODAY:'',deadline:addDays(t.date,-7),followUp:'',link:'',notes:''})}});
+ return n;
+}
+A.ahPick=()=>{const f=document.getElementById('ahFile');f.value='';f.click()};
+A.ahFile=(d,t)=>{const f=t.files[0];if(!f)return;const rd=new FileReader();
+ rd.onload=()=>{let j;try{j=JSON.parse(rd.result);if(j.format!=='accredihub-export'||!j.artists||!j.tracks)throw 0}catch(e){toast('That file is not an AccrediHub export.');return}
+  const sum=`${(j.artists.rows||[]).length} artists, ${(j.tracks.rows||[]).length} tracks, ${(j.agencies.rows||[]).length} PR agencies, ${(j.tourDates.rows||[]).length} tour dates`;
+  if(!confirm('Import from AccrediHub: '+sum+'?\n\nExisting Reverb data is kept; artists with the same name are merged.'))return;
+  const before=JSON.stringify(S);let n;try{n=importAH(j)}catch(e){S=JSON.parse(before);toast('Import failed: '+e.message);return}
+  let ok=true;save();
+  render();toast(`Imported ${n.artists} new artists (${n.artistsMatched} matched), ${n.tracks} tracks, ${n.agencies} agencies, ${n.tours} tour dates.`+'')};
+ rd.readAsText(f)};
+A.backup=()=>download('reverb-backup.json',JSON.stringify(S,null,2),'application/json');
+A.resetAll=()=>{if(confirm('Erase ALL of your Reverb data (artists, songs, gigs, requests, shows)? This cannot be undone.')&&confirm('Really erase everything?')){const k=S.keys;S=emptyState();S.keys=k;S.setup=true;S.view='settings';commit();toast('All data erased')}};
+
+/* artists */
+const artFields=()=>[{k:'name',l:'Name',req:1},{k:'origin',l:'Location'},{k:'genre',l:'Genre'},{k:'bio',l:'Bio (optional)',t:'textarea',w:1},{k:'photoUrl',l:'Photo',t:'photo',w:1}];
+A.artq=(d,t)=>{ui.artq=t.value;render()};
+A.artSort=(d,t)=>{ui.artSort=t.value;render()};
+A.openArtist=d=>{if(!artist(d.id))return;S.artistId=d.id;S.view='artist';ui.q='';commit();window.scrollTo(0,0)};
+A.newArtist=()=>openForm('Add artist',[...artFields(),...(on('press')?[{k:'agency',l:'PR agency (optional)',list:agencyList()},{k:'pcName',l:'Contact name (optional)'},{k:'pcEmail',l:'Contact email (optional)',t:'email',w:1}]:[])],{},o=>{
+ const a={id:uid('a'),name:o.name.trim(),bio:o.bio,photoUrl:o.photoUrl,origin:o.origin,genre:o.genre,mbid:'',notes:'',yearFormed:'',yearSplit:'',isAi:false,complete:false};S.artists.push(a);
+ const ag=(o.agency||'').trim();
+ if(ag)addContact({agency:ag,name:o.pcName,email:o.pcEmail},[a.id]);
+ toast('Artist added.')});
+A.editArtist=d=>{const a=artist(d.id);openForm('Edit artist',[{k:'name',l:'Name',req:1},{k:'bio',l:'Bio',t:'textarea',w:1},{k:'origin',l:'Location'},{k:'genre',l:'Genre'},{k:'yearFormed',l:'Year formed',t:'number',ph:'e.g. 2005'},{k:'yearSplit',l:'Year split',t:'number',ph:'If disbanded'},{k:'mbid',l:'MusicBrainz ID',w:1},{k:'photoUrl',l:'Photo',t:'photo',w:1,seed:a.name},{k:'isAi',l:'AI artist',t:'check'},{k:'complete',l:'Artist profile complete',t:'check'}],a,o=>{Object.assign(a,{...o,yearFormed:o.yearFormed?+o.yearFormed:'',yearSplit:o.yearSplit?+o.yearSplit:'',isAi:!!o.isAi,complete:!!o.complete});toast('Saved.')},{extra:`<button class="btn del" data-act="delArtist" data-id="${a.id}" style="margin-right:auto">Delete artist</button>`})};
+A.delArtist=d=>{const a=artist(d.id);const n=nTracks(a),m=S.tours.filter(t=>t.artistId===a.id).length;
+ if(!confirm(`Delete ${a.name}, their ${plural(n,'track')} and ${plural(m,'tour date')}? Archive gigs and press requests are kept but unlinked.`))return;
+ const sids=S.songs.filter(s=>s.artistId===a.id).map(s=>s.id);
+ S.songs=S.songs.filter(s=>s.artistId!==a.id);S.shows.forEach(sh=>sh.items=sh.items.filter(i=>!sids.includes(i.songId)));
+ S.tours=S.tours.filter(t=>t.artistId!==a.id);S.gigs.forEach(g=>{if(g.artistId===a.id)g.artistId=''});S.apps.forEach(p=>{if(p.artistId===a.id)p.artistId=''});
+ S.contacts.forEach(c=>c.artists=c.artists.filter(x=>x!==a.id));S.contacts=S.contacts.filter(c=>c.name||c.artists.length);S.artists=S.artists.filter(x=>x.id!==a.id);
+ modal=null;S.view='artists';commit();toast('Artist deleted')};
+A.photoPick=d=>{const f=document.querySelector(`#mform input[type=file][data-k="${d.k}"]`);if(f)f.click()};
+A.photoUrl=(d,t)=>{const hid=document.querySelector(`#mform [name="${d.k}"]`),pv=document.getElementById('ph-prev-'+d.k);if(hid)hid.value=t.value;if(pv){pv.style.backgroundImage=t.value?`url('${t.value.replace(/'/g,'%27')}')`:'';pv.innerHTML=t.value?'':IC.disc}};
+A.photoUpload=(d,t)=>{if(!t.files[0])return;resizeImg(t.files[0],320,url=>{const hid=document.querySelector(`#mform [name="${d.k}"]`),vis=document.getElementById('ph-'+d.k),pv=document.getElementById('ph-prev-'+d.k);if(hid)hid.value=url;if(vis){vis.value='';vis.placeholder='Uploaded image'}if(pv){pv.style.backgroundImage=`url('${url}')`;pv.innerHTML=''}})};
+const prFields=()=>[{k:'agency',l:'PR agency',req:1,list:agencyList()},{k:'name',l:'Contact name (optional)'},{k:'role',l:'Role (optional)'},{k:'email',l:'Contact email (optional)',t:'email'},{k:'phone',l:'Contact phone (optional)'},{k:'notes',l:'Notes (optional)',t:'textarea',w:1}];
+A.newPrFor=d=>openForm('Add PR contact',prFields(),{},o=>{addContact(o,[d.id]);toast('Saved.')});
+A.editPr=d=>{const c=contact(d.id);openForm('Edit PR contact',prFields(),c,o=>{Object.assign(c,o);relinkAgency(c);toast('Saved.')})};
+A.unlinkPr=d=>{if(!confirm('Remove this PR contact from the artist? The contact stays in Reverb Press.'))return;unlinkArtist(contact(d.id),d.a);commit()};
+A.toggleAttend=d=>{const t=S.tours.find(x=>x.id===d.id),g=tourGig(t);
+ if(g){if(S.apps.some(p=>p.gigId===g.id)){toast('This date has a press request — remove the request first.');return}S.gigs=S.gigs.filter(x=>x.id!==g.id);toast('Removed from Reverb Archive')}
+ else{ensureGig(t);toast("Added to Reverb Archive — you're going")}commit()};
+A.tourRequest=d=>{const g=ensureGig(S.tours.find(x=>x.id===d.id));save();A.requestPress({id:g.id})};
+A.newSongFor=d=>sfOpen('Add track',{trackNo:'',id:'',title:'',artist:aname(d.id),album:'',released:'',len:'3:30',genre:artist(d.id).genre||'',artUrl:'',nd:'',themes:[]});
+
+/* press */
+const appFields=()=>[{k:'type',l:'Type',t:'select',o:['Photo pass','Accreditation','Review request','Interview','Guestlist']},{k:'status',l:'Status',t:'select',o:['Draft','Requested','Approved','Declined','Completed']},{k:'artistId',l:'Artist',t:'select',o:artOpts(1)},{k:'gigId',l:'Linked gig / festival',t:'select',o:gigOpts()},{k:'contactId',l:'PR contact',t:'select',o:conOpts()},{k:'requested',l:'Date requested',t:'date'},{k:'deadline',l:'Deadline',t:'date'},{k:'followUp',l:'Follow-up date',t:'date'},{k:'link',l:'Link to published piece',w:1},{k:'notes',l:'Notes',t:'textarea',w:1}];
+A.newApp=()=>openForm('New press request',appFields(),{status:'Draft'},o=>{S.apps.push({id:uid('p'),...o})});
+A.newAppFor=d=>{const c=contact(d.id);openForm('New press request',appFields(),{status:'Draft',contactId:c.id,artistId:c.artists[0]||''},o=>{S.apps.push({id:uid('p'),...o});S.tab.press='apps'})};
+A.editApp=d=>{const p=S.apps.find(x=>x.id===d.id);openForm('Edit press request',appFields(),p,o=>Object.assign(p,o))};
+A.delApp=d=>{if(confirm('Delete this request?')){S.apps=S.apps.filter(p=>p.id!==d.id);commit()}};
+A.appStatus=(d,t)=>{const p=S.apps.find(x=>x.id===d.id);p.status=t.value;if(t.value==='Requested'&&!p.requested)p.requested=TODAY;commit();toast('Moved to '+t.value)};
+A.requestPress=d=>{const g=gig(d.id);openForm('Request press access',appFields(),{status:'Draft',gigId:g.id,artistId:g.artistId,type:g.kind==='Festival'?'Accreditation':'Photo pass',deadline:addDays(g.date,-7),contactId:(S.contacts.find(c=>c.artists.includes(g.artistId))||{}).id||''},o=>{S.apps.push({id:uid('p'),...o});S.view='press';S.tab.press='apps'},{saveLabel:'Create request'})};
+const tourFields=w=>[...(w?[{k:'artistId',l:'Artist',t:'select',o:artOpts()}]:[]),{k:'tour',l:'Tour name'},{k:'date',l:'Date',t:'date',req:1},{k:'venue',l:'Venue',req:1},{k:'city',l:'City'},{k:'ticketUrl',l:'Ticket link (optional)',w:1},{k:'status',l:'Tickets',t:'select',o:['On sale','Sold out']}];
+A.newTour=()=>openForm('Add tour date',tourFields(true),{status:'On sale'},o=>{S.tours.push({id:uid('t'),...o})});
+A.newTourFor=d=>openForm('Add tour date',tourFields(false),{status:'On sale'},o=>{S.tours.push({id:uid('t'),artistId:d.id,...o});toast('Saved.')});
+A.editTour=d=>{const t=S.tours.find(x=>x.id===d.id);openForm('Edit tour date',tourFields(false),t,o=>{Object.assign(t,o);toast('Saved.')})};
+A.delTour=d=>{S.tours=S.tours.filter(t=>t.id!==d.id);commit()};
+function tourGig(t){return S.gigs.find(g=>g.artistId===t.artistId&&g.date===t.date)}
+function ensureGig(t){let g=tourGig(t);if(!g){g={id:uid('g'),kind:'Gig',title:aname(t.artistId),artistId:t.artistId,date:t.date,endDate:'',venue:t.venue,city:t.city,support:[],lineup:[],setlist:[],rating:0,review:'',published:'',photos:'',cost:0};S.gigs.push(g)}return g}
+A.tourToArchive=d=>{ensureGig(S.tours.find(x=>x.id===d.id));commit();toast('Added to Reverb Archive as an upcoming gig')};
+A.calMove=d=>{let {y,m}=ui.cal;m+=+d.d;if(m<0){m=11;y--}if(m>11){m=0;y++}ui.cal={y,m};ui.calOpen[dstr(y,m,1).slice(0,7)]=true;render()};
+A.calToday=()=>{ui.cal={y:+TODAY.slice(0,4),m:+TODAY.slice(5,7)-1};render()};
+A.calToggle=d=>{const cur=ui.calOpen[d.k]??(d.k===TODAY.slice(0,7));ui.calOpen[d.k]=!cur;render()};
+A.calSt=(d,t)=>{ui.calSt=t.value;render()};
+A.calPast=(d,t)=>{ui.calPast=t.checked;render()};
+A.tourStatus=(d,t)=>{const x=S.tours.find(v=>v.id===d.id),v=t.value,g=tourGig(x),reqs=g?S.apps.filter(p=>p.gigId===g.id):[];
+ if(!v){if(reqs.length&&!confirm('Remove the press request for this date?')){render();return}if(g)S.apps=S.apps.filter(p=>p.gigId!==g.id);commit();return}
+ const gg=ensureGig(x);let r=S.apps.find(p=>p.gigId===gg.id);
+ if(!r){const c=S.contacts.find(c=>c.artists.includes(x.artistId));r={id:uid('p'),type:'Photo pass',status:v,artistId:x.artistId,gigId:gg.id,contactId:c?c.id:'',requested:'',deadline:addDays(x.date,-7),followUp:'',link:'',notes:''};S.apps.push(r)}
+ r.status=v;if(v==='Requested'&&!r.requested)r.requested=TODAY;commit();toast('Press status: '+PRS[v][0])};
+A.findTours=async()=>{
+ const list=S.artists.slice();if(!list.length){toast('Add some artists first.');return}
+ ui.scan={n:0,total:list.length,found:0,run:Date.now()};const me=ui.scan;render();let i=0,stop=false;
+ const worker=async()=>{while(!stop&&ui.scan===me){const a=list[i++];if(!a)return;
+  try{const r=await fetch('/api/lookup/tour-dates?artist='+encodeURIComponent(a.name),{headers:{'x-bandsintown-id':S.keys.bandsintown||''}});const j=await r.json();
+   if(!r.ok){stop=true;ui.scan=null;render();toast(j.error||'Lookup failed');return}
+   (j.events||[]).forEach(e=>{if(!S.tours.some(t=>t.artistId===a.id&&t.date===e.date&&(t.venue||'')===(e.venue||''))){S.tours.push({id:uid('t'),artistId:a.id,tour:'',date:e.date,venue:e.venue||'',city:e.city||'',status:'On sale',ticketUrl:e.url||''});me.found++}})}catch(e){}
+  me.n++;if(me.n%5===0||me.n===me.total)render()}};
+ await Promise.all([worker(),worker(),worker()]);
+ if(ui.scan===me){me.done=1;save();render()}};
+A.scanClose=()=>{ui.scan=null;render()};
+const conFields=()=>[{k:'agency',l:'Agency / label',req:1,list:agencyList()},{k:'name',l:'Contact name (optional)'},{k:'role',l:'Role'},{k:'email',l:'Email',t:'email'},{k:'phone',l:'Phone'},{k:'last',l:'Last contact',t:'date'},{k:'notes',l:'Notes',t:'textarea',w:1},{k:'artists',l:'Represents (hold Ctrl/Cmd for several)',t:'multi',o:artOpts(),w:1}];
+A.newContact=()=>A.newAgency();
+A.editContact=d=>A.editAgContact(d);
+A.delContact=d=>A.delAgContact(d);
+A.agq=(d,t)=>{ui.agq=t.value;render()};
+A.openAgency=d=>{if(!agencyById(d.id))return;S.agencyId=d.id;S.view='agency';S.tab.press='contacts';ui.open.press=true;ui.q='';commit();window.scrollTo(0,0)};
+const agFields=()=>[{k:'company',l:'Company name',req:1,w:1,ph:'Agency name'},{k:'notes',l:'Notes (optional)',t:'textarea',w:1}];
+A.newAgency=()=>openForm('Add PR agency',agFields(),{},o=>{const nm=o.company.trim(),ex=S.agencies.find(a=>a.company.toLowerCase()===nm.toLowerCase()),ag=ex||ensureAgency(nm);if(ex)toast('That agency already exists — opened it.');else ag.notes=o.notes;S.agencyId=ag.id;S.view='agency';S.tab.press='contacts';ui.open.press=true},{saveLabel:'Save'});
+A.editAgency=d=>{const ag=agencyById(d.id);openForm('Edit PR agency',agFields(),ag,o=>{const nm=o.company.trim();if(S.agencies.some(x=>x.id!==ag.id&&x.company.toLowerCase()===nm.toLowerCase())){toast('Another agency already has that name.');return false}ag.company=nm;ag.notes=o.notes;S.contacts.forEach(c=>{if(c.agencyId===ag.id)c.agency=nm});toast('Saved.')},{extra:`<button class="btn del" data-act="delAgency" data-id="${ag.id}" style="margin-right:auto">Delete agency</button>`})};
+A.delAgency=d=>{const ag=agencyById(d.id);if(!confirm(`Delete “${ag.company}” and all its contacts and links?`))return;const ids=S.contacts.filter(c=>c.agencyId===ag.id).map(c=>c.id);S.contacts=S.contacts.filter(c=>c.agencyId!==ag.id);S.apps.forEach(p=>{if(ids.includes(p.contactId))p.contactId=''});S.agencies=S.agencies.filter(a=>a.id!==ag.id);modal=null;S.view='press';S.tab.press='contacts';commit();toast('Agency deleted')};
+const agcFields=()=>[{k:'name',l:'Name',req:1,w:1,ph:'Contact name'},{k:'role',l:'Role (optional)'},{k:'phone',l:'Phone (optional)',ph:'+44…'},{k:'email',l:'Email (optional)',t:'email',w:1,ph:'name@agency.com'},{k:'notes',l:'Notes (optional)',t:'textarea',w:1}];
+A.newAgContact=d=>{const ag=agencyById(d.id);openForm('Add contact',agcFields(),{},o=>{addContact({...o,agency:ag.company},[]);toast('Saved.')})};
+A.editAgContact=d=>{const c=contact(d.id);openForm('Edit contact',agcFields(),c,o=>{Object.assign(c,o);toast('Saved.')})};
+A.delAgContact=d=>{const c=contact(d.id);if(!confirm('Remove this contact? Artists linked through them stay linked to the agency.'))return;const ag=agencyById(c.agencyId);if(c.artists.length&&ag){const hold=addContact({agency:ag.company,name:''},c.artists);hold.linkNotes={...(c.linkNotes||{}),...hold.linkNotes}}S.apps.forEach(p=>{if(p.contactId===c.id)p.contactId=''});S.contacts=S.contacts.filter(x=>x.id!==c.id);commit()};
+A.linkArtist=d=>{const ag=agencyById(d.id);openForm('Link artist',[{k:'artistName',l:'Artist',req:1,w:1,list:S.artists.map(a=>a.name),ph:'Artist name'},{k:'contactId',l:'Contact at this agency (optional)',t:'select',w:1,o:[['','No specific contact'],...agNamed(ag).map(c=>[c.id,c.name])]},{k:'notes',l:'Notes (optional)',t:'textarea',w:1}],{},o=>{const a=S.artists.find(x=>x.name.toLowerCase()===o.artistName.trim().toLowerCase());if(!a){toast('Pick an existing artist from the list.');return false}const c=o.contactId?contact(o.contactId):addContact({agency:ag.company,name:''},[]);if(!c.artists.includes(a.id))c.artists.push(a.id);c.linkNotes=c.linkNotes||{};if(o.notes)c.linkNotes[a.id]=o.notes;toast('Linked.')})};
+A.unlinkAg=d=>{const a=artist(d.a);if(!confirm(`Unlink ${a.name} from this agency?`))return;unlinkArtist(contact(d.id),d.a);commit()};
+
+/* archive */
+const gigFields=()=>[{k:'kind',l:'Type',t:'select',o:['Gig','Festival']},{k:'title',l:'Title / headliner',req:1},{k:'artistId',l:'Linked artist (gigs)',t:'select',o:artOpts(1)},{k:'date',l:'Date',t:'date',req:1},{k:'endDate',l:'End date (festivals)',t:'date'},{k:'venue',l:'Venue',req:1},{k:'city',l:'City'},{k:'support',l:'Support acts (comma separated)',w:1},{k:'lineup',l:'Festival line-up (comma separated artist names)',w:1},{k:'setlist',l:'Setlist (one song per line)',t:'textarea',rows:5,w:1},{k:'rating',l:'Rating (0–5)',t:'number',step:'1'},{k:'cost',l:'Ticket cost (£)',t:'number',step:'0.01'},{k:'review',l:'Review notes',t:'textarea',w:1},{k:'published',l:'Link to published review'},{k:'photos',l:'Photos / media link'}];
+const gigIn=o=>({...o,support:o.support.split(',').map(x=>x.trim()).filter(Boolean),lineup:o.lineup.split(',').map(x=>x.trim()).filter(Boolean),setlist:o.setlist.split('\n').map(x=>x.trim()).filter(Boolean),rating:Math.max(0,Math.min(5,+o.rating||0)),cost:+o.cost||0});
+const gigOut=g=>({...g,support:g.support.join(', '),lineup:g.lineup.join(', '),setlist:g.setlist.join('\n')});
+A.newGig=()=>openForm('Add gig / festival',gigFields(),{kind:'Gig',date:TODAY},o=>{S.gigs.push({id:uid('g'),...gigIn(o)})},{wide:1});
+A.openGig=d=>{const g=gig(d.id);openForm(g.title,gigFields(),gigOut(g),o=>Object.assign(g,gigIn(o)),{wide:1,extra:`<button class="btn" data-act="fetchSetlist" data-id="${g.id}">Fetch setlist (Setlist.fm)</button>${g.date>=TODAY&&on('press')&&!S.apps.some(p=>p.gigId===g.id)?`<button class="btn" data-act="requestPress" data-id="${g.id}">Request press access</button>`:''}<button class="btn del" data-act="delGig" data-id="${g.id}">Delete</button>`})};
+A.fetchSetlist=async d=>{const g=gig(d.id),t=document.querySelector('#mform [name=setlist]');if(!t)return;
+ const nm=g.artistId?aname(g.artistId):g.title;toast('Searching Setlist.fm…');
+ try{const r=await fetch('/api/lookup/setlist?artist='+encodeURIComponent(nm)+'&date='+encodeURIComponent(g.date),{headers:{'x-setlistfm-key':S.keys.setlist||''}});const j=await r.json();if(!r.ok)throw new Error(j.error||'Lookup failed');
+  if(!j.songs.length){toast('No setlist found for that artist and date.');return}t.value=j.songs.join('\n');toast('Setlist filled in from Setlist.fm ('+j.songs.length+' songs)')}
+ catch(e){toast(e.message)}};
+A.delGig=d=>{if(confirm('Delete this entry?')){S.gigs=S.gigs.filter(g=>g.id!==d.id);S.apps.forEach(p=>{if(p.gigId===d.id)p.gigId=''});modal=null;commit()}};
+
+/* radio */
+A.newSong=()=>sfOpen('Add track',{trackNo:'',id:'',title:'',artist:'',album:'',released:'',len:'3:30',genre:'',artUrl:'',nd:'',themes:[]});
+A.editSong=d=>{const s=song(d.id);sfOpen('Edit track',{id:s.id,title:s.title,artist:aname(s.artistId),album:s.album||'',released:s.released||'',len:s.len?mmss(s.len):'',genre:s.genre||'',artUrl:s.artUrl||'',trackNo:s.trackNo||'',nd:s.nd||'',themes:(s.themes||[]).slice()})};
+A.sfRmTheme=d=>{sfSync();ui.sf.themes=ui.sf.themes.filter(t=>t!==d.t);sfRefresh()};
+A.sfPick=()=>document.getElementById('sf-file').click();
+A.sfUpload=(d,t)=>{const file=t.files[0];if(!file)return;const rd=new FileReader();rd.onload=()=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=c.height=240;const x=c.getContext('2d'),m=Math.min(im.width,im.height);x.drawImage(im,(im.width-m)/2,(im.height-m)/2,m,m,0,0,240,240);sfSync();ui.sf.artUrl=c.toDataURL('image/jpeg',.8);sfRefresh()};im.src=rd.result};rd.readAsDataURL(file)};
+A.themeFAdd=(d,t)=>{const raw=t.value.trim().toLowerCase();t.value='';const m=thSet().find(x=>x.toLowerCase()===raw);if(m&&!ui.themeF.includes(m)){ui.themeF.push(m);ui.songLimit=15}render()};
+A.rmThemeF=d=>{ui.themeF=ui.themeF.filter(t=>t!==d.t);ui.songLimit=15;render()};
+A.ndOnly=(d,t)=>{ui.ndOnly=t.checked;ui.songLimit=15;render()};
+A.moreSongs=()=>{ui.songLimit+=15;render()};
+A.favSong=d=>{const s=song(d.id);s.fav=!s.fav;commit()};
+A.playNd=d=>{const x=S.songs.find(v=>v.id===d.id);if(!x)return;const base=String(S.keys.navidrome||'').replace(/\/+$/,'');if(x.nd){window.open(x.nd,'_blank','noopener');return}if(!base){toast('Set your Navidrome address in Settings first.');return}window.open(base+'/app/#/song?filter='+encodeURIComponent(JSON.stringify({title:x.title})),'_blank','noopener')};
+A.delSong=d=>{if(confirm('Delete this song from the database?')){S.songs=S.songs.filter(s=>s.id!==d.id);S.shows.forEach(sh=>sh.items=sh.items.filter(i=>i.songId!==d.id));commit()}};
+A.addSong=d=>{const sh=currentShow();if(!sh)return toast('Create a show first');sh.items.push({type:'song',songId:d.id});commit();toast('Added “'+song(d.id).title+'”')};
+A.rm=d=>{currentShow().items.splice(+d.i,1);commit()};
+A.mv=d=>{const it=currentShow().items,i=+d.i,j=i+ +d.d;if(j<0||j>=it.length)return;[it[i],it[j]]=[it[j],it[i]];commit()};
+A.addSeg=()=>openForm('Add talk / jingle',[{k:'type',l:'Type',t:'select',o:[['talk','Talk / link / interview'],['jingle','Jingle / ID / ad']]},{k:'label',l:'Label',req:1},{k:'mins',l:'Length (minutes)',t:'number',step:'0.5',def:'2'}],{},o=>{currentShow().items.push({type:o.type,label:o.label,secs:Math.round((+o.mins||0)*60)})});
+A.newShow=()=>openForm('New show',[{k:'name',l:'Show name',req:1},{k:'date',l:'Date',t:'date',req:1},{k:'start',l:'Start time',t:'time',def:'19:00'},{k:'mins',l:'Length (minutes)',t:'number',def:'120'}],{date:TODAY},o=>{const s={id:uid('sh'),name:o.name,date:o.date,start:o.start||'19:00',mins:+o.mins||60,items:[]};S.shows.push(s);ui.showId=s.id;S.tab.radio='shows'});
+A.editShow=d=>{ui.showId=d.id;S.view='radio';S.tab.radio='shows';commit()};
+A.editShowMeta=d=>{const s=S.shows.find(x=>x.id===d.id);openForm('Edit show',[{k:'name',l:'Show name',req:1},{k:'date',l:'Date',t:'date'},{k:'start',l:'Start time',t:'time'},{k:'mins',l:'Length (minutes)',t:'number'}],s,o=>Object.assign(s,{...o,mins:+o.mins||s.mins}))};
+A.delShow=d=>{if(confirm('Delete this show and its playlist?')){S.shows=S.shows.filter(s=>s.id!==d.id);ui.showId=null;commit()}};
+function rows(sh){let run=0,n=0;return sh.items.map(it=>{const s=it.type==='song'?song(it.songId):null,len=s?s.len:it.secs,st=clock(sh.start,run);run+=len;n++;return {n,st,type:it.type==='song'?'Song':it.type==='talk'?'Talk':'Jingle',artist:s?aname(s.artistId):'',title:s?s.title:it.label,album:s?s.album:'',len}})}
+A.expCsv=()=>{const sh=currentShow(),q=v=>'"'+String(v).replace(/"/g,'""')+'"';download(`${sh.date}-${sh.name.replace(/\W+/g,'-')}.csv`,'Order,Start,Type,Artist,Title,Album,Duration\n'+rows(sh).map(r=>[r.n,r.st,r.type,q(r.artist),q(r.title),q(r.album),mmss(r.len)].join(',')).join('\n'),'text/csv')};
+A.expM3u=()=>{const sh=currentShow();download(`${sh.date}-${sh.name.replace(/\W+/g,'-')}.m3u`,'#EXTM3U\n'+rows(sh).filter(r=>r.type==='Song').map(r=>`#EXTINF:${r.len},${r.artist} - ${r.title}\n${r.artist} - ${r.title}.mp3`).join('\n')+'\n','audio/x-mpegurl');toast('M3U exported — file paths use “Artist - Title.mp3”; adjust to match your library')};
+A.runSheet=()=>{const sh=currentShow(),r=rows(sh);modal={title:'Run sheet',save:null,wide:true,extra:'<button class="btn pri" style="background:var(--acc)" onclick="window.print()">Print / Save as PDF</button>',html:`<div id="runsheet" style="padding:20px"><div style="margin-bottom:12px">${logo('radio',26)}</div><h2>${h(sh.name)}</h2><p>${fd(sh.date)} · ${sh.start}–${clock(sh.start,sh.mins*60)} · Planned ${mmss(showSecs(sh))}</p><table><tr><th>TIME</th><th>TYPE</th><th>ARTIST</th><th>TITLE</th><th>LEN</th></tr>${r.map(x=>`<tr><td>${x.st}</td><td>${x.type}</td><td>${h(x.artist)}</td><td><b>${h(x.title)}</b></td><td>${mmss(x.len)}</td></tr>`).join('')}</table></div>`};render()};
+
+render();
+</script>
+</body>
+</html>

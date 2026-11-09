@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Sign in — Reverb</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f4f5fa;
+  --surface:#FFFFFF;
+  --ink:#050f2a;
+  --ink-soft:#5b6478;
+  --accent:#6a0b97;
+  --accent-soft:#efe1f6;
+  --gold:#E0982A;
+  --low:#b42318;
+  --line:#d9dce8;
+}
+*{box-sizing:border-box;}
+html,body{ margin:0; padding:0; }
+body{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  font-family:'Poppins', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background:var(--bg); color:var(--ink);
+}
+main{ width:100%; max-width:340px; padding:20px; text-align:center; }
+.logo-wrap{ display:flex; justify-content:center; margin-bottom:18px; }
+.logo-wrap img{ width:220px; max-width:100%; height:auto; display:block; }
+h1{ font-size:1.4rem; font-weight:800; margin:0 0 6px; }
+.sub{ font-size:0.88rem; color:var(--ink-soft); margin:0 0 26px; line-height:1.4; }
+
+input, button{ box-sizing:border-box; width:100%; height:46px; border-radius:3px; font-size:0.95rem; font-family:inherit; }
+input{ padding:0 14px; border:1px solid var(--line); background:var(--surface); color:var(--ink); display:block; margin-bottom:10px; }
+input:focus{ outline:none; border-color:var(--accent); }
+button{ margin-top:4px; border:none; cursor:pointer; font-weight:600; background:var(--accent); color:#fff; }
+button:disabled{ opacity:0.5; cursor:default; }
+.alt{ background:none; color:var(--ink-soft); font-weight:500; text-decoration:underline; text-underline-offset:2px; margin-top:10px; }
+.msg{ font-size:0.8rem; margin-top:14px; min-height:1em; color:var(--ink-soft); }
+.msg.err{ color:var(--low); }
+[hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div class="logo-wrap"><img src="/logo.png" alt="Reverb" /></div>
+  <h1 id="title">Sign in</h1>
+  <p class="sub" id="sub">Welcome back. Sign in to open Reverb.</p>
+
+  <form id="form" novalidate>
+    <input id="username" name="username" type="text" placeholder="Username"
+           autocomplete="username" autocapitalize="off" autocorrect="off" spellcheck="false"
+           required aria-label="Username">
+    <input id="password" name="password" type="password" placeholder="Password"
+           autocomplete="current-password" required aria-label="Password">
+    <input id="password2" name="password2" type="password" placeholder="Repeat password"
+           autocomplete="new-password" aria-label="Repeat password" hidden>
+    <button id="submit" type="submit">Sign in</button>
+    <button id="toggle" class="alt" type="button" hidden>New here? Create an account</button>
+  </form>
+
+  <p class="msg" id="msg" role="status" aria-live="polite"></p>
+</main>
+<script>
+(function () {
+  var form = document.getElementById('form');
+  var userEl = document.getElementById('username');
+  var passEl = document.getElementById('password');
+  var pass2El = document.getElementById('password2');
+  var submit = document.getElementById('submit');
+  var toggle = document.getElementById('toggle');
+  var msg = document.getElementById('msg');
+  var sub = document.getElementById('sub');
+  var titleEl = document.getElementById('title');
+  var mode = 'login';
+
+  function safeNext() {
+    var raw = new URLSearchParams(location.search).get('next') || '/';
+    if (typeof raw !== 'string' || raw.charAt(0) !== '/' || raw.indexOf('//') === 0) return '/';
+    return raw;
+  }
+  function say(text, kind) { msg.textContent = text || ''; msg.className = 'msg ' + (kind || ''); }
+  function done() { location.replace(safeNext()); }
+
+  function setMode(next) {
+    mode = next;
+    var creating = mode === 'register';
+    titleEl.textContent = creating ? 'Create account' : 'Sign in';
+    sub.textContent = creating
+      ? 'Pick a username and a password of at least 8 characters.'
+      : 'Welcome back. Sign in to open Reverb.';
+    pass2El.hidden = !creating;
+    passEl.autocomplete = creating ? 'new-password' : 'current-password';
+    submit.textContent = creating ? 'Create account' : 'Sign in';
+    toggle.textContent = creating ? 'Already have an account? Sign in' : 'New here? Create an account';
+    say('');
+    userEl.focus();
+  }
+
+  function api(path, body) {
+    return fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) { var err = new Error(data.error || 'Something went wrong.'); err.status = res.status; throw err; }
+        return data;
+      });
+    });
+  }
+
+  // Already signed in? Go straight to the app.
+  fetch('/api/auth/me').then(function (r) { if (r.ok) done(); }).catch(function () {});
+
+  // Only offer account creation if the server allows it.
+  fetch('/api/auth/config').then(function (r) { return r.json(); }).then(function (c) {
+    if (c && c.allowSignup) toggle.hidden = false;
+  }).catch(function () {});
+
+  toggle.addEventListener('click', function () { setMode(mode === 'login' ? 'register' : 'login'); });
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var username = (userEl.value || '').trim();
+    var password = passEl.value || '';
+    if (!username || !password) { say('Enter your username and password.', 'err'); return; }
+    if (mode === 'register' && password !== pass2El.value) { say('Those passwords don’t match.', 'err'); return; }
+    submit.disabled = true;
+    api(mode === 'register' ? '/api/auth/register' : '/api/auth/login', { username: username, password: password })
+      .then(function () { done(); })
+      .catch(function (err) {
+        say(err.status === 429 ? 'Too many attempts. Try again in a few minutes.' : err.message, 'err');
+      })
+      .then(function () { submit.disabled = false; });
+  });
+
+  userEl.focus();
+})();
+</script>
+</body>
+</html>
