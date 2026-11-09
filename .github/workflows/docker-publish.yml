@@ -1,0 +1,27 @@
+# Reverb — Portainer stack
+#
+# 1. The image name below assumes your GitHub repository is called "reverb".
+# 2. In Portainer: Stacks -> Add stack -> Web editor -> paste this -> Deploy the stack.
+# 3. Open http://<your-truenas-ip>:8090 and create your account.
+
+services:
+  reverb:
+    image: ghcr.io/jackb1990/reverb:latest
+    container_name: reverb
+    restart: unless-stopped
+    ports:
+      - "8090:8080"          # host:container. Change the left number if 8090 is already used.
+    environment:
+      TZ: Europe/London
+      ALLOW_SIGNUP: "true"   # set to "false" once your account exists
+      COOKIE_SECURE: "false" # keep false for plain http:// on your LAN
+      SETLISTFM_API_KEY: ""  # optional: lets the setlist button fill setlists
+      BANDSINTOWN_APP_ID: "" # optional: lets "Find new tour dates" work
+      NAVIDROME_URL: ""      # optional: e.g. http://192.168.1.50:4533 (enables Sync Navidrome / Backfill artwork)
+      NAVIDROME_USER: ""
+      NAVIDROME_PASSWORD: ""
+    volumes:
+      - reverb-data:/data    # your database lives here; survives updates and redeploys
+
+volumes:
+  reverb-data:
